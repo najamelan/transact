@@ -94,11 +94,11 @@ impl Bank
 			//
 			match trans.ttype
 			{
-				TransType::Deposit   (amount) => Self::deposit    ( &mut self.db, &mut self.errors, client, trans, amount                 ),
-				TransType::WithDrawal(amount) => Self::withdraw   ( &mut self.db, &mut self.errors, client, trans, amount                 ),
-				TransType::Dispute            => Self::dispute    ( &mut self.db, &mut self.errors, client, trans                         ),
-				TransType::Resolve            => Self::resolution ( &mut self.db, &mut self.errors, client, trans, Resolution::Resolve    ),
-				TransType::ChargeBack         => Self::resolution ( &mut self.db, &mut self.errors, client, trans, Resolution::ChargeBack ),
+				TransType::Deposit (amount) => Self::deposit    ( &mut self.db, &mut self.errors, client, trans, amount                 ),
+				TransType::WithDraw(amount) => Self::withdraw   ( &mut self.db, &mut self.errors, client, trans, amount                 ),
+				TransType::Dispute          => Self::dispute    ( &mut self.db, &mut self.errors, client, trans                         ),
+				TransType::Resolve          => Self::resolution ( &mut self.db, &mut self.errors, client, trans, Resolution::Resolve    ),
+				TransType::ChargeBack       => Self::resolution ( &mut self.db, &mut self.errors, client, trans, Resolution::ChargeBack ),
 			}
 		}
 
@@ -372,9 +372,129 @@ impl Bank
 }
 
 
+
+/// Some basic sanity tests. More complex scenarios will be tested in the integration tests.
+//
 #[ cfg(test) ]
 //
 mod test
 {
+	use crate::{ *, TransType::* };
+	use pretty_assertions::{ assert_eq };
 
+
+	fn locked_client() -> Bank
+	{
+		let mut bank = Bank::new();
+
+		let trs: Vec<Result<_, TransErr>> = vec![ Ok( Transact::new( Deposit(3.2), 1, 1 ) ) ];
+
+		bank.run( trs.into_iter() );
+		bank.clients.get_mut(&1).unwrap().locked = true;
+
+		bank
+	}
+
+
+
+	#[test] fn test_deposit()
+	{
+		let mut bank = Bank::new();
+
+		let trs: Vec<Result<_, TransErr>> = vec!
+		[
+			Ok( Transact::new( Deposit(3.2), 1, 1 ) ),
+			Ok( Transact::new( Deposit(2.3), 1, 2 ) ),
+		];
+
+		let errs   = bank.run( trs.into_iter() );
+			assert_eq!( errs.len(), 0 );
+
+		let client = bank.clients.get(&1).unwrap();
+			assert_eq!( client.available, 5.5 );
+			assert_eq!( client.held     , 0.0 );
+			assert_eq!( client.total()  , 5.5 );
+	}
+
+
+
+	#[test] fn test_deposit_locked()
+	{
+		let mut bank = locked_client();
+
+		let trs: Vec<Result<_, TransErr>> = vec!
+		[
+			Ok( Transact::new( Deposit(3.2), 1, 1 ) ),
+		];
+
+		let errs = bank.run( trs.into_iter() );
+			assert_eq!( errs.len(), 1 );
+			assert!(matches!( errs[0], TransErr::AccountLocked{..} ));
+	}
+
+
+	#[test] fn test_withdrawal()
+	{
+		let mut bank = Bank::new();
+
+		let trs: Vec<Result<_, TransErr>> = vec!
+		[
+			Ok( Transact::new( Deposit (3.0), 1, 1 ) ),
+			Ok( Transact::new( WithDraw(2.0), 1, 2 ) ),
+		];
+
+		let errs   = bank.run( trs.into_iter() );
+			assert_eq!( errs.len(), 0 );
+
+		let client = bank.clients.get(&1).unwrap();
+			assert_eq!( client.available, 1.0 );
+			assert_eq!( client.held     , 0.0 );
+			assert_eq!( client.total()  , 1.0 );
+	}
+
+
+	#[test] fn test_withdrawal_locked()
+	{
+		let mut bank = locked_client();
+
+		let trs: Vec<Result<_, TransErr>> = vec!
+		[
+			Ok( Transact::new( WithDraw(2.0), 1, 2 ) ),
+		];
+
+		let errs = bank.run( trs.into_iter() );
+			assert_eq!( errs.len(), 1 );
+			assert!(matches!( errs[0], TransErr::AccountLocked{..} ));
+	}
+
+
+	#[test] fn test_withdrawal_no_client()
+	{
+		let mut bank = Bank::new();
+
+		let trs: Vec<Result<_, TransErr>> = vec!
+		[
+			Ok( Transact::new( WithDraw(2.0), 1, 2 ) ),
+		];
+
+		let errs = bank.run( trs.into_iter() );
+			assert_eq!( errs.len(), 1 );
+			assert!(matches!( errs[0], TransErr::NoClient{..} ));
+	}
+
+
+	#[test] fn test_withdrawal_no_funds()
+	{
+		let mut bank = Bank::new();
+
+		let trs: Vec<Result<_, TransErr>> = vec!
+		[
+			Ok( Transact::new( Deposit (3.0), 1, 1 ) ),
+			Ok( Transact::new( WithDraw(4.0), 1, 2 ) ),
+		];
+
+		let errs = bank.run( trs.into_iter() );
+			assert_eq!( errs.len(), 1 );
+			assert!(matches!( errs[0], TransErr::InsufficientFunds{..} ));
+	}
 }

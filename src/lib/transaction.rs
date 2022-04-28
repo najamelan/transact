@@ -5,7 +5,7 @@ use crate::{ import::*, TransErr };
 pub enum TransType
 {
 	Deposit(f64),
-	WithDrawal(f64),
+	WithDraw(f64),
 	Dispute,
 	Resolve,
 	ChargeBack,
@@ -33,6 +33,21 @@ pub struct Transact
 }
 
 
+impl Transact
+{
+	pub(crate) fn new( ttype : TransType, client: u16, id: u32 ) -> Self
+	{
+		Self
+		{
+			ttype,
+			client,
+			id,
+			state: TransState::New,
+		}
+	}
+}
+
+
 #[ derive( Copy, Clone, Debug, Serialize, Deserialize) ]
 //
 pub(crate) struct CsvRecord<'a>
@@ -54,8 +69,8 @@ impl<'a> TryFrom< CsvRecord<'a> > for Transact
 		{
 			// negative amounts are not valid.
 			//
-			( "deposit"   , Some(a) ) if a >= 0.0 => Ok( Transact{ state: TransState::New, ttype: TransType::Deposit   (a), client: r.client, id: r.tx } ),
-			( "withdrawal", Some(a) ) if a >= 0.0 => Ok( Transact{ state: TransState::New, ttype: TransType::WithDrawal(a), client: r.client, id: r.tx } ),
+			( "deposit"   , Some(a) ) if a >= 0.0 => Ok( Transact{ state: TransState::New, ttype: TransType::Deposit (a), client: r.client, id: r.tx } ),
+			( "withdrawal", Some(a) ) if a >= 0.0 => Ok( Transact{ state: TransState::New, ttype: TransType::WithDraw(a), client: r.client, id: r.tx } ),
 
 			( "dispute"   , None ) => Ok( Transact{ state: TransState::New, ttype: TransType::Dispute, client: r.client, id: r.tx } ),
 			( "resolve"   , None ) => Ok( Transact{ state: TransState::New, ttype: TransType::Dispute, client: r.client, id: r.tx } ),
