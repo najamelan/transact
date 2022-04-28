@@ -1,0 +1,49 @@
+# Auto-generated from "Cargo.yml"
+[badges]
+[badges.maintenance]
+status = "actively-developed"
+
+[badges.travis-ci]
+repository = "najamelan/transact"
+
+[[bin]]
+name = "transact"
+path = "src/main.rs"
+
+[dependencies]
+csv = "^1"
+
+[dependencies.serde]
+features = ["derive"]
+version = "^1"
+
+[dev-dependencies]
+pretty_assertions = "^0.6"
+
+[features]
+binary = []
+default = ["binary"]
+
+[lib]
+name = "libtransact"
+path = "src/lib/lib.rs"
+
+[package]
+authors = ["Naja Melan <najamelan@autistici.org>"]
+categories = []
+description = "UPDATE ME"
+documentation = "https://docs.rs/transact"
+edition = "2021"
+exclude = ["benches"]
+keywords = []
+license = "MIT OR Apache-2.0"
+name = "transact"
+readme = "README.md"
+repository = "https://github.com/najamelan/transact"
+version = "0.1.0"
+
+[package.metadata]
+[package.metadata.docs]
+[package.metadata.docs.rs]
+all-features = true
+targets = []
