@@ -1,34 +1,27 @@
-use std::{ path::Path, io::Write };
+use std::{ path::Path, process::exit };
 use libtransact::*;
 
 
 fn main() -> Result<(), Box<dyn std::error::Error> >
 {
-	// let s = "
+	let args: Vec<String> = std::env::args().skip(1).collect();
 
-	//       type, client, tx, amount
-	//    deposit,      1,  1,    1.0
-	//    deposit,      2,  2,    2.0
-	//    deposit,      1,  3,    2.0
-	// withdrawal,      1,  4,    1.5
-	// withdrawal,      2,  5,    3.0
+	if args.len() != 1
+	{
+		eprintln!( "Error: The transact takes exactly one argument. A path to a CSV file with transaction. Got {} arguments.", args.len() );
+		exit( 1 );
+	}
 
-	// ";
-
-
-	let src = "tests/simple.csv";
-
-	// let csv = ParseCsv::from( s );
-	let csv = ParseCsv::try_from( Path::new(src) ).unwrap();
+	let csv = ParseCsv::try_from( Path::new(&args[0]) )?;
 
 	let mut bank = Bank::new();
 
 	let errors = bank.run( csv );
-	errors.iter().for_each( |e| eprint!( "{}", e ) );
+	// errors.iter().for_each( |e| eprint!( "{}", e ) );
 	let num_err = errors.len() as i32;
 
 	let out = CsvExport::export( bank.clients() )?;
 	print!( "{}", out );
 
-	std::process::exit( num_err );
+	exit( num_err );
 }

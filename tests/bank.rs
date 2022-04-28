@@ -8,10 +8,15 @@
 //! ✓ resolve dispute
 //! ✓ chargeback dispute
 //! ✓ take input from file
+//! - run binary
 //
-use libtransact::*;
-use pretty_assertions::assert_eq;
-use std::path::Path;
+use
+{
+	libtransact::*               ,
+	pretty_assertions::assert_eq ,
+	std::path::Path              ,
+	std::process::Command        ,
+};
 
 type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
@@ -163,6 +168,25 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 		assert_eq!( client.held()     , 0.0 );
 		assert_eq!( client.total()    , 1.9 );
 
+
+	Ok(())
+}
+
+
+#[test] fn test_cli() -> DynResult
+{
+	let output = Command::new("cargo")
+
+		.arg( "run" )
+		.arg( "--"  )
+		.arg( "tests/simple.csv"  )
+		.output()?
+	;
+
+	assert_eq!( std::str::from_utf8(&output.stdout)?, "     client,  available,       held,      total,      locked
+          1,        1.5,          0,        1.5,      false
+          2,        1.9,          0,        1.9,      false
+" );
 
 	Ok(())
 }
