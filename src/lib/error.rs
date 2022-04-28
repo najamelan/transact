@@ -22,6 +22,13 @@ pub enum TransErr
 		source: Option<csv::Error>,
 	},
 
+	/// Failed to export CSV.
+	//
+	SerializeClients
+	{
+		source: fmt::Error,
+	},
+
 	/// A deposit or withdrawal with a transaction id that already exists came in.
 	/// The transaction will be ignored as invalid.
 	//
@@ -104,6 +111,7 @@ impl std::error::Error for TransErr
 		match &self
 		{
 			TransErr::InputFile          { source, .. } => Some(source),
+			TransErr::SerializeClients   { source     } => Some(source),
 			TransErr::DeserializeTransact{ source     } =>
 			{
 				match source
@@ -131,21 +139,25 @@ impl std::fmt::Display for TransErr
 {
 	fn fmt( &self, f: &mut std::fmt::Formatter<'_> ) -> std::fmt::Result
 	{
-		let no_effect = "This transaction has been ignored and not data was modified.";
+		let no_effect = "\nThis transaction has been ignored and not data was modified.";
 
 		match &self
 		{
 			TransErr::InputFile{ source, path } =>
 
-				write!( f, "Error: Could not open the supplied input file ({}): {source}", path.to_string_lossy() ),
+				writeln!( f, "Error: Could not open the supplied input file ({}): {source}", path.to_string_lossy() ),
+
+			TransErr::SerializeClients{ source } =>
+
+				writeln!( f, "Error: Failed to serialize client information: {source}" ),
 
 			TransErr::DeserializeTransact{source} =>
 			{
-				write!( f, "Error: A line of input could not be deserialized into a valid transaction. {no_effect}" )?;
+				writeln!( f, "Error: A line of input could not be deserialized into a valid transaction. {no_effect}" )?;
 
 				if let Some(s) = source
 				{
-					return write!( f, "Underlying error: {s}" );
+					return writeln!( f, "Underlying error: {s}" );
 				}
 
 				Ok(())
@@ -153,39 +165,39 @@ impl std::fmt::Display for TransErr
 
 			TransErr::DuplicateTransact{trans} =>
 
-				write!( f, "Error: A duplicate transaction id occurred in your data: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: A duplicate transaction id occurred in your data: {trans:?}. {no_effect}" ),
 
 			TransErr::AccountLocked{trans} =>
 
-				write!( f, "Error: The client account is locked: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: The client account is locked: {trans:?}. {no_effect}" ),
 
 			TransErr::InsufficientFunds{trans} =>
 
-				write!( f, "Error: Cannot withdraw/dispute with insufficient funds: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: Cannot withdraw/dispute with insufficient funds: {trans:?}. {no_effect}" ),
 
 			TransErr::NoClient{trans} =>
 
-				write!( f, "Error: Cannot withdraw/dispute/resolve/charge back from non-existing client: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: Cannot withdraw/dispute/resolve/charge back from non-existing client: {trans:?}. {no_effect}" ),
 
 			TransErr::WrongClient{trans} =>
 
-				write!( f, "Error: Cannot dispute/resolve/charge back from a different client than the original deposit: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: Cannot dispute/resolve/charge back from a different client than the original deposit: {trans:?}. {no_effect}" ),
 
 			TransErr::WrongTransState{trans} =>
 
-				write!( f, "Error: Can only dispute a successful transaction, resolve/charge back a disputed transaction: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: Can only dispute a successful transaction, resolve/charge back a disputed transaction: {trans:?}. {no_effect}" ),
 
 			TransErr::ReferNoneExisting{trans} =>
 
-				write!( f, "Error: Cannot dispute/resolve/charge back a non existing transaction: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: Cannot dispute/resolve/charge back a non existing transaction: {trans:?}. {no_effect}" ),
 
 			TransErr::ShouldBeDeposit{trans} =>
 
-				write!( f, "Error: Disputed transaction must be a deposit: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: Disputed transaction must be a deposit: {trans:?}. {no_effect}" ),
 
 			TransErr::DisputeFailedTransact{trans} =>
 
-				write!( f, "Error: Disputed transaction must be a successful transaction: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: Disputed transaction must be a successful transaction: {trans:?}. {no_effect}" ),
 		}
 	}
 }

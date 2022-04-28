@@ -35,6 +35,12 @@ impl Bank
 	}
 
 
+	pub fn clients( &self ) -> &HashMap<u16, Client>
+	{
+		&self.clients
+	}
+
+
 	pub fn run( &mut self, source: impl Iterator<Item=Result<Transact, TransErr>> ) -> &[TransErr]
 	{
 		for result in source
@@ -83,7 +89,7 @@ impl Bank
 
 			// client account should not be locked. No operation shall happen on a locked account.
 			//
-			if client.locked
+			if client.is_locked()
 			{
 				self.errors.push( TransErr::AccountLocked{ trans } );
 				continue;
@@ -127,8 +133,8 @@ impl Bank
 		}
 
 
-		trans.state       = TransState::Success;
-		client.available += amount;
+		trans.state = TransState::Success;
+		client.set_available( client.available() + amount );
 
 		db.insert( trans.id, trans );
 	}
@@ -162,14 +168,14 @@ impl Bank
 
 		// client.available should be >= amount
 		//
-		if  client.available < amount
+		if  client.available() < amount
 		{
 			errors.push( TransErr::InsufficientFunds{ trans } );
 			return;
 		}
 
-		trans.state       = TransState::Success;
-		client.available -= amount;
+		trans.state = TransState::Success;
+		client.set_available( client.available() - amount );
 
 		db.insert( trans.id, trans );
 	}
@@ -222,7 +228,7 @@ impl Bank
 
 		// client should equal client of disputed transaction.
 		//
-		if client.id != old_trans.client
+		if client.id() != old_trans.client
 		{
 			errors.push( TransErr::WrongClient{ trans } );
 			return;
@@ -255,15 +261,15 @@ impl Bank
 		// client.available should be >= disputed amount
 		// If the client has already consumed the funds, they cannot dispute the deposit.
 		//
-		if client.available < amount
+		if client.available() < amount
 		{
 			errors.push( TransErr::InsufficientFunds{ trans } );
 			return;
 		}
 
+		client.set_available( client.available() - amount );
+		client.set_held     ( client.held()      + amount );
 
-		client.available -= amount;
-		client.held      += amount;
 		old_trans.state   = TransState::Disputed;
 	}
 
@@ -313,7 +319,7 @@ impl Bank
 
 		// client should equal client of disputed transaction.
 		//
-		if client.id != old_trans.client
+		if client.id() != old_trans.client
 		{
 			errors.push( TransErr::WrongClient{ trans } );
 			return;
@@ -345,7 +351,7 @@ impl Bank
 
 		// client.held should be >= disputed amount
 		//
-		if client.held < amount
+		if client.held() < amount
 		{
 			errors.push( TransErr::InsufficientFunds{ trans } );
 			return;
@@ -356,15 +362,16 @@ impl Bank
 		{
 			Resolution::Resolve =>
 			{
-				client.held      -= amount;
-				client.available += amount;
+				client.set_available( client.available() + amount );
+				client.set_held     ( client.held()      - amount );
+
 				old_trans.state   = TransState::Success;
 			}
 
 			Resolution::ChargeBack =>
 			{
-				client.locked     = true;
-				client.held      -= amount;
+				client.lock();
+				client.set_held( client.held() - amount );
 				old_trans.state   = TransState::ChargedBack;
 			}
 		}
@@ -390,7 +397,7 @@ mod test
 		let trs: Vec<Result<_, TransErr>> = vec![ Ok( Transact::new( Deposit(3.2), 1, 1 ) ) ];
 
 		bank.run( trs.into_iter() );
-		bank.clients.get_mut(&1).unwrap().locked = true;
+		bank.clients.get_mut(&1).unwrap().lock();
 
 		bank
 	}
@@ -411,8 +418,8 @@ mod test
 			assert_eq!( errs.len(), 0 );
 
 		let client = bank.clients.get(&1).unwrap();
-			assert_eq!( client.available, 5.5 );
-			assert_eq!( client.held     , 0.0 );
+			assert_eq!( client.available(), 5.5 );
+			assert_eq!( client.held()     , 0.0 );
 			assert_eq!( client.total()  , 5.5 );
 	}
 
@@ -447,8 +454,8 @@ mod test
 			assert_eq!( errs.len(), 0 );
 
 		let client = bank.clients.get(&1).unwrap();
-			assert_eq!( client.available, 1.0 );
-			assert_eq!( client.held     , 0.0 );
+			assert_eq!( client.available(), 1.0 );
+			assert_eq!( client.held()     , 0.0 );
 			assert_eq!( client.total()  , 1.0 );
 	}
 

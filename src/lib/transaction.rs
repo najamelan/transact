@@ -72,9 +72,9 @@ impl<'a> TryFrom< CsvRecord<'a> > for Transact
 			( "deposit"   , Some(a) ) if a >= 0.0 => Ok( Transact{ state: TransState::New, ttype: TransType::Deposit (a), client: r.client, id: r.tx } ),
 			( "withdrawal", Some(a) ) if a >= 0.0 => Ok( Transact{ state: TransState::New, ttype: TransType::WithDraw(a), client: r.client, id: r.tx } ),
 
-			( "dispute"   , None ) => Ok( Transact{ state: TransState::New, ttype: TransType::Dispute, client: r.client, id: r.tx } ),
-			( "resolve"   , None ) => Ok( Transact{ state: TransState::New, ttype: TransType::Dispute, client: r.client, id: r.tx } ),
-			( "chargeback", None ) => Ok( Transact{ state: TransState::New, ttype: TransType::Dispute, client: r.client, id: r.tx } ),
+			( "dispute"   , None ) => Ok( Transact{ state: TransState::New, ttype: TransType::Dispute   , client: r.client, id: r.tx } ),
+			( "resolve"   , None ) => Ok( Transact{ state: TransState::New, ttype: TransType::Resolve   , client: r.client, id: r.tx } ),
+			( "chargeback", None ) => Ok( Transact{ state: TransState::New, ttype: TransType::ChargeBack, client: r.client, id: r.tx } ),
 
 			// TODO: add info about what's wrong.
 			//

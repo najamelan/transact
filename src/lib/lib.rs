@@ -22,16 +22,18 @@
 	variant_size_differences      ,
 )]
 
-mod error;
-mod transaction;
 mod bank;
 mod client;
+mod csv_export;
+mod error;
 mod parse_csv;
+mod transaction;
 
 pub use bank        ::*;
 pub use client      ::*;
-pub use parse_csv   ::*;
+pub use csv_export  ::*;
 pub use error       ::*;
+pub use parse_csv   ::*;
 pub use transaction ::*;
 
 
@@ -41,7 +43,7 @@ mod import
 {
 	pub(crate) use
 	{
-		std :: { path::{ Path, PathBuf }, fs::File, fmt, collections::HashMap } ,
+		std :: { path::{ Path, PathBuf }, fs::File, fmt, collections::HashMap, fmt::Write } ,
 		serde:: { Serialize, Deserialize },
 	};
 }
