@@ -50,31 +50,3 @@ mod import
 		serde:: { Serialize, Deserialize },
 	};
 }
-
-
-
-// struct ByteRecord;
-
-// impl<'a, T: AsRef<[u8]>> From<&'a [T]> for ByteRecord
-// {
-// 	fn from( _s: &'a [T] ) -> Self
-// 	{
-// 		Self
-// 	}
-// }
-
-// fn works<'a, T: AsRef<[u8]>>( _s: &'a [T] ) -> ByteRecord
-// {
-// 	ByteRecord
-// }
-
-// fn works2<'a, T: AsRef<[u8]>>( s: &'a [T] ) -> ByteRecord
-// {
-// 	ByteRecord::from(s)
-// }
-
-// fn main()
-// {
-// 	works2( &["string"] );
-//    //ByteRecord::from( &["string"] );
-// }

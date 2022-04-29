@@ -1,4 +1,5 @@
 use crate::{ import::*, transaction::*, TransErr };
+use once_cell::unsync::Lazy;
 
 
 /// A csv source for transactions. The format is as follows:
@@ -17,7 +18,6 @@ use crate::{ import::*, transaction::*, TransErr };
 pub struct CsvParse<T>
 {
 	source: csv::ByteRecordsIntoIter<T>,
-	header: csv::ByteRecord,
 }
 
 
@@ -35,9 +35,7 @@ impl<T: std::io::Read > CsvParse<T>
 			.into_byte_records()
 		;
 
-		let header = csv::ByteRecord::from( vec![ "type", "client", "tx", "amount" ] );
-
-		Self{ source, header }
+		Self{ source }
 	}
 }
 
@@ -48,6 +46,8 @@ impl<T: std::io::Read> Iterator for CsvParse<T>
 
 	fn next( &mut self ) -> Option<Self::Item>
 	{
+		let header = Lazy::new( || csv::ByteRecord::from( vec![ "type", "client", "tx", "amount" ] ) );
+
 		if let Some(result) = self.source.next()
 		{
 			let cr = match result
@@ -56,7 +56,7 @@ impl<T: std::io::Read> Iterator for CsvParse<T>
 				Err(e) => return Some(Err(TransErr::DeserializeTransact{ source: Some(e) } )),
 			};
 
-			match cr.deserialize::<CsvRecord<'_>>( Some(&self.header) )
+			match cr.deserialize::<CsvRecord<'_>>( Some(&header) )
 			{
 				Ok (r) => return Some( Transact::try_from(r) ),
 				Err(e) => return Some(Err(TransErr::DeserializeTransact{ source: Some(e) } )),
