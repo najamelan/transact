@@ -7,11 +7,11 @@ use crate::{ import::*, TransErr };
 //
 pub enum TransType
 {
-	Deposit(f64),
-	WithDraw(f64),
-	Dispute,
-	Resolve,
-	ChargeBack,
+	Deposit (f64) ,
+	WithDraw(f64) ,
+	Dispute       ,
+	Resolve       ,
+	ChargeBack    ,
 }
 
 
@@ -51,10 +51,10 @@ pub enum TransState
 //
 pub struct Transact
 {
-	pub ttype : TransType,
-	pub state : TransState,
-	pub client: u16,
-	pub id    : u32,
+	pub ttype : TransType  ,
+	pub state : TransState ,
+	pub client: u16        ,
+	pub id    : u32        ,
 }
 
 
@@ -66,10 +66,10 @@ impl Transact
 	{
 		Self
 		{
-			ttype,
-			client,
-			id,
-			state: TransState::New,
+			ttype                  ,
+			client                 ,
+			id                     ,
+			state: TransState::New ,
 		}
 	}
 }
@@ -79,10 +79,10 @@ impl Transact
 //
 pub(crate) struct CsvRecord<'a>
 {
-	r#type: &'a str,
-	client: u16,
-	tx    : u32,
-	amount: Option<f64>,
+	r#type: &'a str     ,
+	client: u16         ,
+	tx    : u32         ,
+	amount: Option<f64> ,
 }
 
 

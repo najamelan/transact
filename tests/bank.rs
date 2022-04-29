@@ -14,13 +14,12 @@ use
 {
 	libtransact::*               ,
 	pretty_assertions::assert_eq ,
-	std::path::Path              ,
 	std::process::Command        ,
 };
 
 type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
-#[test] fn test_2_clients()
+#[test] fn two_clients()
 {
 	let input = "
 
@@ -46,7 +45,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 		assert_eq!( client.available(), 1.5 );
 		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()  , 1.5 );
+		assert_eq!( client.total()    , 1.5 );
 
 
 	let client = bank.clients().get(&2).unwrap();
@@ -58,7 +57,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 }
 
 
-#[test] fn test_dispute()
+#[test] fn dispute()
 {
 	let input = "
 
@@ -86,7 +85,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 }
 
 
-#[test] fn test_resolve()
+#[test] fn resolve()
 {
 	let input = "
 
@@ -115,7 +114,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 }
 
 
-#[test] fn test_chargeback()
+#[test] fn chargeback()
 {
 	let input = "
 
@@ -144,7 +143,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 }
 
 
-#[test] fn test_cli() -> DynResult
+#[test] fn cli() -> DynResult
 {
 	let output = Command::new("cargo")
 

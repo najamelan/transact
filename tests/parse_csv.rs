@@ -3,7 +3,15 @@
 //!
 //! Tested:
 //!
-//! ✓
+//! ✓ file input
+//! ✓ file with leading empty lines
+//! ✓ file with trailing empty lines
+//! ✓ file with empty lines in the middle
+//!
+//! - Invalid input
+//!   - dispute, resolve, charge back with amount.
+//!   - deposit/withdraw without amount.
+//!   - non numeric values.
 //
 use
 {
@@ -16,7 +24,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 
 
-#[test] fn test_file_input() -> DynResult
+#[test] fn file_input() -> DynResult
 {
 	let parser   = CsvParse::try_from( Path::new("tests/data/simple.csv") )?;
 	let mut bank = Bank::new();
@@ -46,7 +54,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 
 
-#[test] fn test_empty_leading() -> DynResult
+#[test] fn empty_leading() -> DynResult
 {
 	let parser   = CsvParse::try_from( Path::new("tests/data/empty_leading.csv") )?;
 	let mut bank = Bank::new();
@@ -76,7 +84,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 
 
-#[test] fn test_empty_trailing() -> DynResult
+#[test] fn empty_trailing() -> DynResult
 {
 	let parser   = CsvParse::try_from( Path::new("tests/data/empty_trailing.csv") )?;
 	let mut bank = Bank::new();
@@ -106,7 +114,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 
 
-#[test] fn test_empty_middle() -> DynResult
+#[test] fn empty_middle() -> DynResult
 {
 	let parser   = CsvParse::try_from( Path::new("tests/data/empty_middle.csv") )?;
 	let mut bank = Bank::new();
