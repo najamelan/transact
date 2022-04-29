@@ -12,9 +12,9 @@ use crate::{ import::*, transaction::*, TransErr };
 /// withdrawal,      2,  5,    3.0
 /// `
 ///
-/// ParseCsv will open the file when constructed and keep it open until dropped.
+/// CsvParse will open the file when constructed and keep it open until dropped.
 //
-pub struct ParseCsv<T>
+pub struct CsvParse<T>
 {
 	source: csv::ByteRecordsIntoIter<T>,
 	header: csv::ByteRecord,
@@ -22,7 +22,7 @@ pub struct ParseCsv<T>
 
 
 
-impl<T: std::io::Read > ParseCsv<T>
+impl<T: std::io::Read > CsvParse<T>
 {
 	/// Create a new file based source for Csv data.
 	//
@@ -42,7 +42,7 @@ impl<T: std::io::Read > ParseCsv<T>
 }
 
 
-impl<T: std::io::Read> Iterator for ParseCsv<T>
+impl<T: std::io::Read> Iterator for CsvParse<T>
 {
 	type Item = Result<Transact, TransErr>;
 
@@ -69,7 +69,7 @@ impl<T: std::io::Read> Iterator for ParseCsv<T>
 
 
 
-impl<T> fmt::Debug for ParseCsv<T>
+impl<T> fmt::Debug for CsvParse<T>
 {
 	fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> fmt::Result
 	{
@@ -80,25 +80,25 @@ impl<T> fmt::Debug for ParseCsv<T>
 
 
 
-impl From< &'static str > for ParseCsv< &[u8] >
+impl From< &'static str > for CsvParse< &[u8] >
 {
-	fn from( s: &'static str  ) -> ParseCsv< &[u8] >
+	fn from( s: &'static str  ) -> CsvParse< &[u8] >
 	{
-		ParseCsv::new( s.trim().as_bytes() )
+		CsvParse::new( s.trim().as_bytes() )
 	}
 }
 
 
 // If you were hoping for:
-// impl<P: AsRef<Path>> TryFrom<P> for ParseCsv
+// impl<P: AsRef<Path>> TryFrom<P> for CsvParse
 //
 // It's not going to happen: https://github.com/rust-lang/rust/issues/50133
 //
-impl TryFrom< &Path > for ParseCsv<File>
+impl TryFrom< &Path > for CsvParse<File>
 {
 	type Error = TransErr;
 
-	fn try_from( p: &Path ) -> Result<ParseCsv<File>, TransErr>
+	fn try_from( p: &Path ) -> Result<CsvParse<File>, TransErr>
 	{
 		let file = std::fs::File::open( p )
 
@@ -109,6 +109,6 @@ impl TryFrom< &Path > for ParseCsv<File>
 			})?
 		;
 
-		Ok( ParseCsv::new( file ) )
+		Ok( CsvParse::new( file ) )
 	}
 }

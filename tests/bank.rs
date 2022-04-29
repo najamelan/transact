@@ -33,7 +33,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 	";
 
-	let parser   = ParseCsv::from( input );
+	let parser   = CsvParse::from( input );
 	let mut bank = Bank::new();
 
 
@@ -69,7 +69,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 	";
 
-	let parser   = ParseCsv::from( input );
+	let parser   = CsvParse::from( input );
 	let mut bank = Bank::new();
 
 
@@ -98,7 +98,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 	";
 
-	let parser   = ParseCsv::from( input );
+	let parser   = CsvParse::from( input );
 	let mut bank = Bank::new();
 
 
@@ -127,7 +127,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 	";
 
-	let parser   = ParseCsv::from( input );
+	let parser   = CsvParse::from( input );
 	let mut bank = Bank::new();
 
 

@@ -26,14 +26,14 @@ mod bank;
 mod client;
 mod csv_export;
 mod error;
-mod parse_csv;
+mod csv_parse;
 mod transaction;
 
 pub use bank        ::*;
 pub use client      ::*;
 pub use csv_export  ::*;
 pub use error       ::*;
-pub use parse_csv   ::*;
+pub use csv_parse   ::*;
 pub use transaction ::*;
 
 

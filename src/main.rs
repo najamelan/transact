@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error> >
 		exit( 1 );
 	}
 
-	let csv = ParseCsv::try_from( Path::new(&args[0]) )?;
+	let csv = CsvParse::try_from( Path::new(&args[0]) )?;
 
 	let mut bank = Bank::new();
 

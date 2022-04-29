@@ -18,7 +18,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 #[test] fn test_file_input() -> DynResult
 {
-	let parser   = ParseCsv::try_from( Path::new("tests/data/simple.csv") )?;
+	let parser   = CsvParse::try_from( Path::new("tests/data/simple.csv") )?;
 	let mut bank = Bank::new();
 
 
@@ -48,7 +48,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 #[test] fn test_empty_leading() -> DynResult
 {
-	let parser   = ParseCsv::try_from( Path::new("tests/data/empty_leading.csv") )?;
+	let parser   = CsvParse::try_from( Path::new("tests/data/empty_leading.csv") )?;
 	let mut bank = Bank::new();
 
 
@@ -78,7 +78,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 #[test] fn test_empty_trailing() -> DynResult
 {
-	let parser   = ParseCsv::try_from( Path::new("tests/data/empty_trailing.csv") )?;
+	let parser   = CsvParse::try_from( Path::new("tests/data/empty_trailing.csv") )?;
 	let mut bank = Bank::new();
 
 
@@ -108,7 +108,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 #[test] fn test_empty_middle() -> DynResult
 {
-	let parser   = ParseCsv::try_from( Path::new("tests/data/empty_middle.csv") )?;
+	let parser   = CsvParse::try_from( Path::new("tests/data/empty_middle.csv") )?;
 	let mut bank = Bank::new();
 
 
