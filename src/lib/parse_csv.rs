@@ -28,7 +28,13 @@ impl<T: std::io::Read > ParseCsv<T>
 	//
 	pub fn new( reader: T ) -> Self
 	{
-		let source = csv::ReaderBuilder::new().trim(csv::Trim::All).from_reader( reader ).into_byte_records();
+		let source = csv::ReaderBuilder::new()
+
+			.trim( csv::Trim::All )
+			.from_reader( reader )
+			.into_byte_records()
+		;
+
 		let header = csv::ByteRecord::from( vec![ "type", "client", "tx", "amount" ] );
 
 		Self{ source, header }

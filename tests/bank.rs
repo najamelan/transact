@@ -8,7 +8,7 @@
 //! ✓ resolve dispute
 //! ✓ chargeback dispute
 //! ✓ take input from file
-//! - run binary
+//! ✓ run binary
 //
 use
 {
@@ -144,49 +144,23 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 }
 
 
-#[test] fn test_file_input() -> DynResult
-{
-	let parser   = ParseCsv::try_from( Path::new("tests/simple.csv") )?;
-	let mut bank = Bank::new();
-
-
-	let err = bank.run( parser );
-
-		assert_eq!( err.len(), 0, "{err:?}" );
-
-
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), 1.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.5 );
-
-
-	let client = bank.clients().get(&2).unwrap();
-
-		assert_eq!( client.available(), 1.9 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.9 );
-
-
-	Ok(())
-}
-
-
 #[test] fn test_cli() -> DynResult
 {
 	let output = Command::new("cargo")
 
 		.arg( "run" )
 		.arg( "--"  )
-		.arg( "tests/simple.csv"  )
+		.arg( "tests/data/simple.csv"  )
 		.output()?
 	;
 
-	assert_eq!( std::str::from_utf8(&output.stdout)?, "     client,  available,       held,      total,      locked
-          1,        1.5,          0,        1.5,      false
-          2,        1.9,          0,        1.9,      false
-" );
+	// Since order of the clients is not deterministic, we cannot test an exact outcome.
+	//
+	let out = std::str::from_utf8(&output.stdout)?;
+
+	assert!( out.contains( "client,  available,       held,      total,      locked" ) );
+	assert!( out.contains(      "1,        1.5,          0,        1.5,      false"  ) );
+	assert!( out.contains(      "2,        1.9,          0,        1.9,      false"  ) );
 
 	Ok(())
 }
