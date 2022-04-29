@@ -1,6 +1,7 @@
+#![forbid(unsafe_code)]
+
 use std::{ path::Path, process::exit };
 use libtransact::*;
-
 
 fn main() -> Result<(), Box<dyn std::error::Error> >
 {

@@ -5,6 +5,10 @@
 const DIGITS: f64 = 10_000.0;
 
 
+/// Represents a client account.
+/// There are 2 types of balance: available and held.
+/// Held corresponds to funds from disputed transactions.
+//
 #[ derive( Copy, Clone, PartialEq, PartialOrd, Debug ) ]
 //
 pub struct Client
@@ -18,6 +22,8 @@ pub struct Client
 
 impl Client
 {
+	/// Create a new client with the given ID.
+	//
 	pub fn new( id: u16 ) -> Self
 	{
 		Self

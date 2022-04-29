@@ -1,7 +1,8 @@
 use crate::{ import::*, client::*, error::* };
 
 
-
+/// Namespace for the export function. Takes care of exporting the client data to CSV.
+//
 #[ derive( Debug, Copy, Clone ) ]
 //
 pub struct CsvExport {}
@@ -9,6 +10,8 @@ pub struct CsvExport {}
 
 impl CsvExport
 {
+	/// Export the client data to CSV.
+	//
 	pub fn export( clients: &HashMap< u16, Client > ) -> Result<String, TransErr>
 	{
 		let mut width = 12;

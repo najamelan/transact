@@ -1,3 +1,5 @@
+#![ allow(missing_docs) ]
+
 use crate::{ import::*, transaction::* };
 
 /// The error type for errors happening in libtransact.

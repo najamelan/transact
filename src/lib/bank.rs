@@ -1,6 +1,9 @@
 use crate::{ import::*, transaction::*, client::Client, TransErr };
 
 
+
+/// The central unit that processes transactions and keeps client balances.
+//
 #[ derive( Debug, Default) ]
 //
 pub struct Bank
@@ -24,6 +27,8 @@ enum Resolution { Resolve, ChargeBack }
 
 impl Bank
 {
+	/// Create a new bank.
+	//
 	pub fn new() -> Self
 	{
 		Self
@@ -35,12 +40,25 @@ impl Bank
 	}
 
 
+	/// Get all the clients and their balances.
+	//
 	pub fn clients( &self ) -> &HashMap<u16, Client>
 	{
 		&self.clients
 	}
 
 
+	/// Get all the clients (mutable) and their balances.
+	//
+	pub fn clients_mut( &mut self ) -> &mut HashMap<u16, Client>
+	{
+		&mut self.clients
+	}
+
+
+	/// Process a list of transactions. Will return a list of all the errors that happened
+	/// during processing. Transactions that cause an error will not affect any balances.
+	//
 	pub fn run( &mut self, source: impl Iterator<Item=Result<Transact, TransErr>> ) -> &[TransErr]
 	{
 		for result in source
@@ -351,8 +369,14 @@ impl Bank
 
 		// client.held should be >= disputed amount
 		//
+		// debug_assert because this should be impossible to hit, as we only allow resolving/chargback of disputed
+		// transactions and when we dispute, we move the funds to held.
+		// If there is not enough available funds in at the time of the dispute, the dispute gets
+		// rejected, which will be caught above because the transaction state will not be disputed.
+		//
 		if client.held() < amount
 		{
+			debug_assert!( client.held() >= amount );
 			errors.push( TransErr::InsufficientFunds{ trans } );
 			return;
 		}

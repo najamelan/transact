@@ -1,5 +1,6 @@
 # Todo
 
+- expose certain parts of the api only for testing? Transaction::new, clients_mut, ...
 - in bank, can we continue after an error?
 - don't accept inputs that are to big for f64.
 - what should happen if one line in a CSV file is invalid?
