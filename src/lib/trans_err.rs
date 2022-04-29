@@ -1,6 +1,6 @@
 #![ allow(missing_docs) ]
 
-use crate::{ import::*, transaction::* };
+use crate::{ import::*, transaction::*, util::* };
 
 /// The error type for errors happening in libtransact.
 //
@@ -79,7 +79,7 @@ pub enum TransErr
 		trans: Transact,
 	},
 
-	/// Disputed transaction does not exist.
+	/// Cannot dispute/resolve/chargeback a non existing transaction.
 	/// The transaction will be ignored as invalid.
 	//
 	ReferNoneExisting
@@ -95,10 +95,23 @@ pub enum TransErr
 		trans: Transact,
 	},
 
-	/// Disputed transaction must be a successful transaction.
-	/// The transaction will be ignored as invalid.
+	/// A transaction causes a balance to overflow.
 	//
-	DisputeFailedTransact
+	FloatIsInfinite
+	{
+		trans: Transact,
+	},
+
+	/// A transaction causes NaN to be stored in a balance.
+	//
+	FloatIsNaN
+	{
+		trans: Transact,
+	},
+
+	/// A transaction causes NaN to be stored in a balance.
+	//
+	FloatIsNegative
 	{
 		trans: Transact,
 	},
@@ -123,15 +136,17 @@ impl std::error::Error for TransErr
 				}
 			}
 
-			TransErr::DuplicateTransact     {..} => None,
-			TransErr::AccountLocked         {..} => None,
-			TransErr::InsufficientFunds     {..} => None,
-			TransErr::NoClient              {..} => None,
-			TransErr::WrongClient           {..} => None,
-			TransErr::WrongTransState       {..} => None,
-			TransErr::ReferNoneExisting     {..} => None,
-			TransErr::ShouldBeDeposit       {..} => None,
-			TransErr::DisputeFailedTransact {..} => None,
+			TransErr::DuplicateTransact  {..} => None,
+			TransErr::AccountLocked      {..} => None,
+			TransErr::InsufficientFunds  {..} => None,
+			TransErr::NoClient           {..} => None,
+			TransErr::WrongClient        {..} => None,
+			TransErr::WrongTransState    {..} => None,
+			TransErr::ReferNoneExisting  {..} => None,
+			TransErr::ShouldBeDeposit    {..} => None,
+			TransErr::FloatIsInfinite    {..} => None,
+			TransErr::FloatIsNaN         {..} => None,
+			TransErr::FloatIsNegative    {..} => None,
 		}
 	}
 }
@@ -159,7 +174,7 @@ impl std::fmt::Display for TransErr
 
 				if let Some(s) = source
 				{
-					return writeln!( f, "Underlying error: {s}" );
+					writeln!( f, "Underlying error: {s}" )?;
 				}
 
 				Ok(())
@@ -197,11 +212,31 @@ impl std::fmt::Display for TransErr
 
 				writeln!( f, "Error: Disputed transaction must be a deposit: {trans:?}. {no_effect}" ),
 
-			TransErr::DisputeFailedTransact{trans} =>
+			TransErr::FloatIsInfinite{trans} =>
 
-				writeln!( f, "Error: Disputed transaction must be a successful transaction: {trans:?}. {no_effect}" ),
+				writeln!( f, "Error: A transaction caused a balance to be set to an infinite value: {trans:?}. {no_effect}" ),
+
+			TransErr::FloatIsNaN{trans} =>
+
+				writeln!( f, "Error: A transaction caused a balance to be set to a Nan value: {trans:?}. {no_effect}" ),
+
+			TransErr::FloatIsNegative{trans} =>
+
+				writeln!( f, "Error: A transaction caused a balance to be set to a negative value: {trans:?}. {no_effect}" ),
 		}
 	}
 }
 
 
+impl From<(Transact, FloatErr)> for TransErr
+{
+	fn from( (trans, err): (Transact, FloatErr) ) -> Self
+	{
+		match err
+		{
+			FloatErr::Infinite => TransErr::FloatIsInfinite{ trans } ,
+			FloatErr::NaN      => TransErr::FloatIsNaN     { trans } ,
+			FloatErr::Negative => TransErr::FloatIsNegative{ trans } ,
+		}
+	}
+}

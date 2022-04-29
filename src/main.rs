@@ -5,6 +5,8 @@ use libtransact::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error> >
 {
+	// first argument is the process path.
+	//
 	let args: Vec<String> = std::env::args().skip(1).collect();
 
 	if args.len() != 1
@@ -13,16 +15,23 @@ fn main() -> Result<(), Box<dyn std::error::Error> >
 		exit( 1 );
 	}
 
-	let csv = CsvParse::try_from( Path::new(&args[0]) )?;
+	let transactions = CsvParse::try_from( Path::new(&args[0]) )?;
+	let mut bank     = Bank::new();
 
-	let mut bank = Bank::new();
+	let errors = bank.run( transactions );
 
-	let errors = bank.run( csv );
-	// errors.iter().for_each( |e| eprint!( "{}", e ) );
+	// report errors on stderr.
+	//
+	errors.iter().for_each( |e| eprint!( "{}", e ) );
+
 	let num_err = errors.len() as i32;
 
+	// report results on stdout.
+	//
 	let out = CsvExport::export( bank.clients() )?;
 	print!( "{}", out );
 
+	// report the number of errors in the status code.
+	//
 	exit( num_err );
 }

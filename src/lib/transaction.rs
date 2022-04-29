@@ -1,4 +1,4 @@
-use crate::{ import::*, TransErr };
+use crate::{ import::*, TransErr, util::validate_float };
 
 /// The type of transaction.
 //
@@ -86,6 +86,9 @@ pub(crate) struct CsvRecord<'a>
 }
 
 
+
+
+
 impl<'a> TryFrom< CsvRecord<'a> > for Transact
 {
 	type Error = TransErr;
@@ -94,10 +97,10 @@ impl<'a> TryFrom< CsvRecord<'a> > for Transact
 	{
 		match (r.r#type, r.amount)
 		{
-			// negative amounts are not valid.
+			// negative amounts are not valid, as well as infinity and NaN.
 			//
-			( "deposit"   , Some(a) ) if a >= 0.0 => Ok( Transact::new( TransType::Deposit (a), r.client, r.tx ) ),
-			( "withdrawal", Some(a) ) if a >= 0.0 => Ok( Transact::new( TransType::WithDraw(a), r.client, r.tx ) ),
+			( "deposit"   , Some(a) ) if validate_float(a).is_ok() => Ok( Transact::new( TransType::Deposit (a), r.client, r.tx ) ),
+			( "withdrawal", Some(a) ) if validate_float(a).is_ok() => Ok( Transact::new( TransType::WithDraw(a), r.client, r.tx ) ),
 
 			( "dispute"   , None ) => Ok( Transact::new( TransType::Dispute   , r.client, r.tx ) ),
 			( "resolve"   , None ) => Ok( Transact::new( TransType::Resolve   , r.client, r.tx ) ),

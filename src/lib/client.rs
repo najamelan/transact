@@ -1,8 +1,11 @@
+use crate::{ util::* };
 
 /// Constant used for rounding to a certain amount of decimal places.
 /// 10000 = 4 decimal places.
 //
 const DIGITS: f64 = 10_000.0;
+
+
 
 
 /// Represents a client account.
@@ -47,19 +50,38 @@ impl Client
 
 	/// Update the available funds.
 	//
-	pub(crate) fn set_available( &mut self, new: f64 ) -> &mut Self
+	pub(crate) fn update_balance( &mut self, available: f64, held: f64 ) -> Result<(), FloatErr>
 	{
-		self.available = Self::round( new );
-		self
-	}
+		let avail = match validate_float(available)
+		{
+			Ok(val) => val,
+
+			x => return x.map( |a|
+			{
+				// No operations currently allow creating a negative account balance. This should never happen.
+				//
+				debug_assert!( !a.is_sign_negative(), "Trying to set a negative balance on client.available" );
+			}),
+		};
 
 
-	/// Update the available funds.
-	//
-	pub(crate) fn set_held( &mut self, new: f64 ) -> &mut Self
-	{
-		self.held = Self::round( new );
-		self
+		let held = match validate_float(held)
+		{
+			Ok(val) => val,
+
+			x => return x.map( |h|
+			{
+				// No operations currently allow creating a negative account balance. This should never happen.
+				//
+				debug_assert!( !h.is_sign_negative(), "Trying to set a negative balance on client.available" );
+			}),
+		};
+
+
+		self.available = Self::round( avail );
+		self.held      = Self::round( held  );
+
+		Ok(())
 	}
 
 

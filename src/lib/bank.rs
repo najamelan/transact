@@ -151,10 +151,16 @@ impl Bank
 		}
 
 
-		trans.state = TransState::Success;
-		client.set_available( client.available() + amount );
+		match client.update_balance( client.available() + amount, client.held() )
+		{
+			Ok(_) =>
+			{
+				trans.state = TransState::Success;
+				db.insert( trans.id, trans );
+			}
 
-		db.insert( trans.id, trans );
+			Err(e) => errors.push( (trans, e).into() ),
+		}
 	}
 
 
@@ -192,10 +198,17 @@ impl Bank
 			return;
 		}
 
-		trans.state = TransState::Success;
-		client.set_available( client.available() - amount );
 
-		db.insert( trans.id, trans );
+		match client.update_balance( client.available() - amount, client.held() )
+		{
+			Ok(_) =>
+			{
+				trans.state = TransState::Success;
+				db.insert( trans.id, trans );
+			}
+
+			Err(e) => errors.push( (trans, e).into() ),
+		}
 	}
 
 
@@ -285,10 +298,12 @@ impl Bank
 			return;
 		}
 
-		client.set_available( client.available() - amount );
-		client.set_held     ( client.held()      + amount );
 
-		old_trans.state   = TransState::Disputed;
+		match client.update_balance( client.available() - amount, client.held() + amount )
+		{
+			Ok (_) => old_trans.state = TransState::Disputed ,
+			Err(e) => errors.push( (trans, e).into() )       ,
+		}
 	}
 
 
@@ -386,17 +401,25 @@ impl Bank
 		{
 			Resolution::Resolve =>
 			{
-				client.set_available( client.available() + amount );
-				client.set_held     ( client.held()      - amount );
-
-				old_trans.state   = TransState::Success;
+				match client.update_balance( client.available() + amount, client.held() - amount )
+				{
+					Ok (_) => old_trans.state = TransState::Success ,
+					Err(e) => errors.push( (trans, e).into() )      ,
+				}
 			}
 
 			Resolution::ChargeBack =>
 			{
-				client.lock();
-				client.set_held( client.held() - amount );
-				old_trans.state   = TransState::ChargedBack;
+				match client.update_balance( client.available(), client.held() - amount )
+				{
+					Ok (_) =>
+					{
+						old_trans.state = TransState::ChargedBack;
+						client.lock();
+					}
+
+					Err(e) => errors.push( (trans, e).into() ),
+				}
 			}
 		}
 	}

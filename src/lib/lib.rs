@@ -25,16 +25,19 @@
 mod bank;
 mod client;
 mod csv_export;
-mod error;
+mod trans_err;
 mod csv_parse;
 mod transaction;
+
+pub(crate) mod util;
 
 pub use bank        ::*;
 pub use client      ::*;
 pub use csv_export  ::*;
-pub use error       ::*;
+pub use trans_err   ::*;
 pub use csv_parse   ::*;
 pub use transaction ::*;
+
 
 
 // External dependencies
