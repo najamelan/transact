@@ -8,7 +8,9 @@
 //! ✓ file with trailing empty lines
 //! ✓ file with empty lines in the middle
 //!
-//! - Invalid input
+//! - Invalid input:
+//!
+//!   ✓ file with one invalid line.
 //!   - dispute, resolve, charge back with amount.
 //!   - deposit/withdraw without amount.
 //!   - non numeric values.
@@ -137,6 +139,30 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 		assert_eq!( client.available(), 1.9 );
 		assert_eq!( client.held()     , 0.0 );
 		assert_eq!( client.total()    , 1.9 );
+
+
+	Ok(())
+}
+
+
+
+#[test] fn invalid_line() -> DynResult
+{
+	let parser   = CsvParse::try_from( Path::new("tests/data/invalid_line.csv") )?;
+	let mut bank = Bank::new();
+
+
+	let err = bank.run( parser );
+
+		assert_eq!( err.len(), 2, "{err:?}"                               );
+		assert!   ( matches!( err[0], TransErr::DeserializeTransact{..} ) );
+
+
+	let client = bank.clients().get(&1).unwrap();
+
+		assert_eq!( client.available(), 1.5 );
+		assert_eq!( client.held()     , 0.0 );
+		assert_eq!( client.total()    , 1.5 );
 
 
 	Ok(())

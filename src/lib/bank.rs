@@ -13,8 +13,7 @@ pub struct Bank
 	// This mocks a DB. Since we need access to past transactions for dispute, resolve and chargeback,
 	// there isn't much of a choice here.
 	//
-	db: HashMap< u32, Transact >,
-
+	db    : HashMap< u32, Transact >,
 	errors: Vec<TransErr>,
 }
 
