@@ -4,14 +4,14 @@ use once_cell::unsync::Lazy;
 
 /// A csv source for transactions. The format is as follows:
 ///
-/// `
+/// ```csv
 ///       type, client, tx, amount
 ///    deposit,      1,  1,    1.0
 ///    deposit,      2,  2,    2.0
 ///    deposit,      1,  3,    2.0
 /// withdrawal,      1,  4,    1.5
 /// withdrawal,      2,  5,    3.0
-/// `
+/// ```
 ///
 /// CsvParse will open the file when constructed and keep it open until dropped.
 //

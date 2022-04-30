@@ -156,73 +156,75 @@ impl std::fmt::Display for TransErr
 {
 	fn fmt( &self, f: &mut std::fmt::Formatter<'_> ) -> std::fmt::Result
 	{
-		let no_effect = "\nThis transaction has been ignored and not data was modified.";
+		let no_effect = "\nThis transaction has been ignored and no data was modified by it.";
 
 		match &self
 		{
 			TransErr::InputFile{ source, path } =>
 
-				writeln!( f, "Error: Could not open the supplied input file ({}): {source}", path.to_string_lossy() ),
+				writeln!( f, "\nError: Could not open the supplied input file ({}): {source}", path.to_string_lossy() ),
 
 			TransErr::SerializeClients{ source } =>
 
-				writeln!( f, "Error: Failed to serialize client information: {source}" ),
+				writeln!( f, "\nError: Failed to serialize client information: {source}" ),
 
 			TransErr::DeserializeTransact{source} =>
 			{
-				writeln!( f, "Error: A line of input could not be deserialized into a valid transaction. {no_effect}" )?;
+				write!( f, "\nError: A line of input could not be deserialized into a valid transaction." )?;
 
 				if let Some(s) = source
 				{
-					writeln!( f, "Underlying error: {s}" )?;
+					write!( f, "Underlying error: {s}" )?;
 				}
+
+				writeln!( f, "{no_effect}" )?;
 
 				Ok(())
 			}
 
 			TransErr::DuplicateTransact{trans} =>
 
-				writeln!( f, "Error: A duplicate transaction id occurred in your data: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: A duplicate transaction id occurred in your data: {trans:?}. {no_effect}" ),
 
 			TransErr::AccountLocked{trans} =>
 
-				writeln!( f, "Error: The client account is locked: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: The client account is locked: {trans:?}. {no_effect}" ),
 
 			TransErr::InsufficientFunds{trans} =>
 
-				writeln!( f, "Error: Cannot withdraw/dispute with insufficient funds: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Cannot withdraw/dispute with insufficient funds: {trans:?}. {no_effect}" ),
 
 			TransErr::NoClient{trans} =>
 
-				writeln!( f, "Error: Cannot withdraw/dispute/resolve/charge back from non-existing client: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Cannot withdraw/dispute/resolve/charge back from non-existing client: {trans:?}. {no_effect}" ),
 
 			TransErr::WrongClient{trans} =>
 
-				writeln!( f, "Error: Cannot dispute/resolve/charge back from a different client than the original deposit: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Cannot dispute/resolve/charge back from a different client than the original deposit: {trans:?}. {no_effect}" ),
 
 			TransErr::WrongTransState{trans} =>
 
-				writeln!( f, "Error: Can only dispute a successful transaction, resolve/charge back a disputed transaction: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Can only dispute a successful transaction, resolve/charge back a disputed transaction: {trans:?}. {no_effect}" ),
 
 			TransErr::ReferNoneExisting{trans} =>
 
-				writeln!( f, "Error: Cannot dispute/resolve/charge back a non existing transaction: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Cannot dispute/resolve/charge back a non existing transaction: {trans:?}. {no_effect}" ),
 
 			TransErr::ShouldBeDeposit{trans} =>
 
-				writeln!( f, "Error: Disputed transaction must be a deposit: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Disputed transaction must be a deposit: {trans:?}. {no_effect}" ),
 
 			TransErr::FloatIsInfinite{trans} =>
 
-				writeln!( f, "Error: A transaction caused a balance to be set to an infinite value: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: A transaction caused a balance to be set to an infinite value: {trans:?}. {no_effect}" ),
 
 			TransErr::FloatIsNaN{trans} =>
 
-				writeln!( f, "Error: A transaction caused a balance to be set to a Nan value: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: A transaction caused a balance to be set to a Nan value: {trans:?}. {no_effect}" ),
 
 			TransErr::FloatIsNegative{trans} =>
 
-				writeln!( f, "Error: A transaction caused a balance to be set to a negative value: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: A transaction caused a balance to be set to a negative value: {trans:?}. {no_effect}" ),
 		}
 	}
 }

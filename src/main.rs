@@ -3,6 +3,14 @@
 use std::{ path::Path, process::exit };
 use libtransact::*;
 
+
+
+/// Simple CLI frontend which will collect the first argument as a filename. The file is assumed
+/// to be transactions encoded in CSV with comma separated values.
+///
+/// Erroneous transactions will be skipped and errors will be printed to stderr with the status
+/// code representing how many errors occurred.
+//
 fn main() -> Result<(), Box<dyn std::error::Error> >
 {
 	// first argument is the process path.
