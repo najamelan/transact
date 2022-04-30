@@ -28,7 +28,7 @@ package:
   version       : 0.1.0
   name          : transact
   authors       : [ Naja Melan <najamelan@autistici.org> ]
-  description   : UPDATE ME
+  description   : Transaction processing exercise.
   documentation : https://docs.rs/transact
   repository    : https://github.com/najamelan/transact
   readme        : README.md
@@ -58,12 +58,6 @@ bin:
 lib:
   name: libtransact
   path: src/lib/lib.rs
-
-
-features:
-
-  default: [ binary ]
-  binary: []
 
 
 dependencies:

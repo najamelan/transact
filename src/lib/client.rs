@@ -1,9 +1,5 @@
-use crate::{ util::* };
+use crate::{ * };
 
-/// Constant used for rounding to a certain amount of decimal places.
-/// 10000 = 4 decimal places.
-//
-const DIGITS: f64 = 10_000.0;
 
 
 
@@ -12,14 +8,14 @@ const DIGITS: f64 = 10_000.0;
 /// There are 2 types of balance: available and held.
 /// Held corresponds to funds from disputed transactions.
 //
-#[ derive( Copy, Clone, PartialEq, PartialOrd, Debug ) ]
+#[ derive( Copy, Clone, PartialEq, Debug ) ]
 //
 pub struct Client
 {
-	available: f64,
-	held     : f64,
-	id       : u16,
-	locked   : bool,
+	available: Balance ,
+	held     : Balance ,
+	id       : u16     ,
+	locked   : bool    ,
 }
 
 
@@ -31,57 +27,11 @@ impl Client
 	{
 		Self
 		{
-			available: 0.0  ,
-			held     : 0.0  ,
-			locked   : false,
-			id              ,
+			available: Balance::try_from( 0.0 ).unwrap() ,
+			held     : Balance::try_from( 0.0 ).unwrap() ,
+			locked   : false                             ,
+			id                                           ,
 		}
-	}
-
-
-	/// Round the floating point number to a certain number of decimal places.
-	/// This avoids a slow buildup of rounding error over repeated arithmetic operations.
-	//
-	fn round( n: f64 ) -> f64
-	{
-		(n * DIGITS).round() / DIGITS
-	}
-
-
-	/// Update the available funds.
-	//
-	pub(crate) fn update_balance( &mut self, available: f64, held: f64 ) -> Result<(), FloatErr>
-	{
-		let avail = match validate_float(available)
-		{
-			Ok(val) => val,
-
-			x => return x.map( |a|
-			{
-				// No operations currently allow creating a negative account balance. This should never happen.
-				//
-				debug_assert!( !a.is_sign_negative(), "Trying to set a negative balance on client.available" );
-			}),
-		};
-
-
-		let held = match validate_float(held)
-		{
-			Ok(val) => val,
-
-			x => return x.map( |h|
-			{
-				// No operations currently allow creating a negative account balance. This should never happen.
-				//
-				debug_assert!( !h.is_sign_negative(), "Trying to set a negative balance on client.available" );
-			}),
-		};
-
-
-		self.available = Self::round( avail );
-		self.held      = Self::round( held  );
-
-		Ok(())
 	}
 
 
@@ -93,10 +43,38 @@ impl Client
 	}
 
 
+	/// Update the available balance.
+	///
+	/// This can fail if the total of held and available balances cannot be represented
+	/// with a float.
+	//
+	pub fn set_available( &mut self, new: Balance ) -> Result<&mut Self, FloatErr>
+	{
+		self.held.try_add( new )?;
+
+		self.available = new;
+		Ok(self)
+	}
+
+
+	/// Update the held balance
+	///
+	/// This can fail if the total of held and available balances cannot be represented
+	/// with a float.
+	//
+	pub fn set_held( &mut self, new: Balance ) -> Result<&mut Self, FloatErr>
+	{
+		self.held.try_add( new )?;
+
+		self.held = new;
+		Ok(self)
+	}
+
+
 	/// The available funds for the client. These are the funds they dispose of
 	/// for withdrawal.
 	//
-	pub fn available( &self ) -> f64
+	pub fn available( &self ) -> Balance
 	{
 		self.available
 	}
@@ -104,17 +82,19 @@ impl Client
 
 	/// Disputed funds are funds for a deposit the client wishes to undo.
 	//
-	pub fn held( &self ) -> f64
+	pub fn held( &self ) -> Balance
 	{
 		self.held
 	}
 
 
 	/// The total of available and disputed funds.
+	/// This is infallible because the setters for available and held guarantee the sum
+	/// can be represented in an f64.
 	//
-	pub fn total( &self ) -> f64
+	pub fn total( &self ) -> Balance
 	{
-		Self::round( self.available + self.held )
+		self.available.try_add( self.held ).unwrap()
 	}
 
 

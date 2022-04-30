@@ -1,23 +1,23 @@
-use crate::{ import::*, TransErr, util::validate_float };
+use crate::{ import::*, * };
 
 /// The type of transaction.
 //
 #[ allow(missing_docs) ]
-#[ derive( Copy, Clone, PartialEq, PartialOrd, Debug, Serialize, Deserialize) ]
+#[ derive( Copy, Clone, PartialEq, PartialOrd, Debug) ]
 //
 pub enum TransType
 {
-	Deposit (f64) ,
-	WithDraw(f64) ,
-	Dispute       ,
-	Resolve       ,
-	ChargeBack    ,
+	Deposit (Balance) ,
+	WithDraw(Balance) ,
+	Dispute           ,
+	Resolve           ,
+	ChargeBack        ,
 }
 
 
 /// The transaction state.
 //
-#[ derive( Copy, Clone, PartialEq, PartialOrd, Debug, Serialize, Deserialize) ]
+#[ derive( Copy, Clone, PartialEq, PartialOrd, Debug) ]
 //
 pub enum TransState
 {
@@ -47,7 +47,7 @@ pub enum TransState
 /// Internal representation of a transaction.
 //
 #[ allow(missing_docs) ]
-#[ derive( Copy, Clone, PartialEq, PartialOrd, Debug, Serialize, Deserialize) ]
+#[ derive( Copy, Clone, PartialEq, Debug) ]
 //
 pub struct Transact
 {
@@ -75,6 +75,9 @@ impl Transact
 }
 
 
+/// The format actually in the CSV file.
+/// Used for deserializing with Serde.
+//
 #[ derive( Copy, Clone, Debug, Serialize, Deserialize) ]
 //
 pub(crate) struct CsvRecord<'a>
@@ -87,8 +90,6 @@ pub(crate) struct CsvRecord<'a>
 
 
 
-
-
 impl<'a> TryFrom< CsvRecord<'a> > for Transact
 {
 	type Error = TransErr;
@@ -97,17 +98,26 @@ impl<'a> TryFrom< CsvRecord<'a> > for Transact
 	{
 		match (r.r#type, r.amount)
 		{
-			// negative amounts are not valid, as well as infinity and NaN.
-			//
-			( "deposit"   , Some(a) ) if validate_float(a).is_ok() => Ok( Transact::new( TransType::Deposit (a), r.client, r.tx ) ),
-			( "withdrawal", Some(a) ) if validate_float(a).is_ok() => Ok( Transact::new( TransType::WithDraw(a), r.client, r.tx ) ),
+			( x, Some(a) ) =>
+			{
+				// TODO: let the source be an enum over FloatErr and CsvError, so we can include the float error here.
+				//
+				let b = Balance::try_from(a).map_err( |_| TransErr::DeserializeTransact{ source: None } )?;
+
+				let ttype = match x
+				{
+					"deposit"    => TransType::Deposit (b),
+					"withdrawal" => TransType::WithDraw(b),
+					_            => return Err( TransErr::DeserializeTransact{ source: None } ),
+				};
+
+				Ok( Transact::new( ttype, r.client, r.tx ) )
+			}
 
 			( "dispute"   , None ) => Ok( Transact::new( TransType::Dispute   , r.client, r.tx ) ),
 			( "resolve"   , None ) => Ok( Transact::new( TransType::Resolve   , r.client, r.tx ) ),
 			( "chargeback", None ) => Ok( Transact::new( TransType::ChargeBack, r.client, r.tx ) ),
 
-			// TODO: add info about what's wrong.
-			//
 			_ => Err( TransErr::DeserializeTransact{ source: None } )
 		}
 	}

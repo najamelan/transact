@@ -21,10 +21,6 @@ version = "^1"
 [dev-dependencies]
 pretty_assertions = "^0.6"
 
-[features]
-binary = []
-default = ["binary"]
-
 [lib]
 name = "libtransact"
 path = "src/lib/lib.rs"
@@ -32,7 +28,7 @@ path = "src/lib/lib.rs"
 [package]
 authors = ["Naja Melan <najamelan@autistici.org>"]
 categories = []
-description = "UPDATE ME"
+description = "Transaction processing exercise."
 documentation = "https://docs.rs/transact"
 edition = "2021"
 exclude = ["benches"]

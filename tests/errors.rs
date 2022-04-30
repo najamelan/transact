@@ -37,8 +37,8 @@ fn locked_client() -> Bank
 
 	let trs: Vec<Result<_, TransErr>> = vec!
 	[
-		Ok( Transact::new( TransType::Deposit(3.2), 1, 1 ) ) ,
-		Ok( Transact::new( TransType::Deposit(2.0), 1, 2 ) ) ,
+		Ok( Transact::new( TransType::Deposit( Balance::try_from(3.2).unwrap() ), 1, 1 ) ) ,
+		Ok( Transact::new( TransType::Deposit( Balance::try_from(2.0).unwrap() ), 1, 2 ) ) ,
 		Ok( Transact::new( TransType::Dispute     , 1, 1 ) ) ,
 	];
 

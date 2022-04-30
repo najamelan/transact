@@ -71,9 +71,9 @@ impl<T: std::io::Read> Iterator for CsvParse<T>
 
 impl<T> fmt::Debug for CsvParse<T>
 {
-	fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> fmt::Result
+	fn fmt( &self, f: &mut std::fmt::Formatter<'_> ) -> fmt::Result
 	{
-		Ok(())
+		write!( f, "CsvParse" )
 	}
 }
 

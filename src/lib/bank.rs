@@ -1,4 +1,4 @@
-use crate::{ import::*, transaction::*, client::Client, TransErr };
+use crate::{ import::*, * };
 
 
 
@@ -115,14 +115,14 @@ impl Bank
 
 			// Handle each type of transaction.
 			//
-			match trans.ttype
+			let _ = match trans.ttype
 			{
-				TransType::Deposit (amount) => Self::deposit    ( &mut self.db, &mut self.errors, client, trans, amount                 ),
-				TransType::WithDraw(amount) => Self::withdraw   ( &mut self.db, &mut self.errors, client, trans, amount                 ),
-				TransType::Dispute          => Self::dispute    ( &mut self.db, &mut self.errors, client, trans                         ),
-				TransType::Resolve          => Self::resolution ( &mut self.db, &mut self.errors, client, trans, Resolution::Resolve    ),
-				TransType::ChargeBack       => Self::resolution ( &mut self.db, &mut self.errors, client, trans, Resolution::ChargeBack ),
-			}
+				TransType::Deposit (amount) => Self::deposit   ( &mut self.db, client, trans, amount                 ).map_err( |e| self.errors.push(e) ),
+				TransType::WithDraw(amount) => Self::withdraw  ( &mut self.db, client, trans, amount                 ).map_err( |e| self.errors.push(e) ),
+				TransType::Dispute          => Self::dispute   ( &mut self.db, client, trans                         ).map_err( |e| self.errors.push(e) ),
+				TransType::Resolve          => Self::resolution( &mut self.db, client, trans, Resolution::Resolve    ).map_err( |e| self.errors.push(e) ),
+				TransType::ChargeBack       => Self::resolution( &mut self.db, client, trans, Resolution::ChargeBack ).map_err( |e| self.errors.push(e) ),
+			};
 		}
 
 		&self.errors
@@ -139,27 +139,22 @@ impl Bank
 	/// - the transaction id should not exist.
 	///
 	//
-	fn deposit( db: &mut HashMap<u32, Transact>, errors: &mut Vec<TransErr>, client: &mut Client, mut trans: Transact, amount: f64 )
+	fn deposit( db: &mut HashMap<u32, Transact>, client: &mut Client, mut trans: Transact, amount: Balance ) -> Result<(), TransErr>
 	{
 		// the transaction id should not exist
 		//
 		if db.get( &trans.id ).is_some()
 		{
-			errors.push( TransErr::DuplicateTransact{ trans } );
-			return;
+			return Err( TransErr::DuplicateTransact{ trans } );
 		}
 
+		let a = client.available().try_add( amount ).map_err( |e| (trans, e) )?;
+		client.set_available( a ).map_err( |e| (trans, e) )?;
 
-		match client.update_balance( client.available() + amount, client.held() )
-		{
-			Ok(_) =>
-			{
-				trans.state = TransState::Success;
-				db.insert( trans.id, trans );
-			}
+		trans.state = TransState::Success;
+		db.insert( trans.id, trans );
 
-			Err(e) => errors.push( (trans, e).into() ),
-		}
+		Ok(())
 	}
 
 
@@ -178,14 +173,13 @@ impl Bank
 	/// - client.available >= amount.
 	///
 	//
-	fn withdraw( db: &mut HashMap<u32, Transact>, errors: &mut Vec<TransErr>, client: &mut Client, mut trans: Transact, amount: f64 )
+	fn withdraw( db: &mut HashMap<u32, Transact>, client: &mut Client, mut trans: Transact, amount: Balance ) -> Result<(), TransErr>
 	{
-		// transaction id should not exist yet.
+		// the transaction id should not exist
 		//
 		if db.get( &trans.id ).is_some()
 		{
-			errors.push( TransErr::DuplicateTransact{ trans } );
-			return;
+			return Err( TransErr::DuplicateTransact{ trans } );
 		}
 
 
@@ -193,21 +187,15 @@ impl Bank
 		//
 		if  client.available() < amount
 		{
-			errors.push( TransErr::InsufficientFunds{ trans } );
-			return;
+			return Err( TransErr::InsufficientFunds{ trans } );
 		}
 
+		let a = client.available().try_sub( amount ).map_err( |e| (trans, e) )?;
+		client.set_available( a ).map_err( |e| (trans, e) )?;
 
-		match client.update_balance( client.available() - amount, client.held() )
-		{
-			Ok(_) =>
-			{
-				trans.state = TransState::Success;
-				db.insert( trans.id, trans );
-			}
-
-			Err(e) => errors.push( (trans, e).into() ),
-		}
+		trans.state = TransState::Success;
+		db.insert( trans.id, trans );
+		Ok(())
 	}
 
 
@@ -240,19 +228,14 @@ impl Bank
 	/// - client should equal client of disputed transaction.
 	/// - client.available >= disputed amount
 	//
-	fn dispute( db: &mut HashMap<u32, Transact>, errors: &mut Vec<TransErr>, client: &mut Client, trans: Transact )
+	fn dispute( db: &mut HashMap<u32, Transact>, client: &mut Client, trans: Transact ) -> Result<(), TransErr>
 	{
 		// transaction should exist
 		//
 		let old_trans = match db.get_mut( &trans.id )
 		{
 			Some(t) => t,
-
-			None =>
-			{
-				errors.push( TransErr::ReferNoneExisting{ trans } );
-				return;
-			}
+			None    => return Err( TransErr::ReferNoneExisting{ trans } ),
 		};
 
 
@@ -260,8 +243,7 @@ impl Bank
 		//
 		if client.id() != old_trans.client
 		{
-			errors.push( TransErr::WrongClient{ trans } );
-			return;
+			return Err( TransErr::WrongClient{ trans } );
 		}
 
 
@@ -270,12 +252,7 @@ impl Bank
 		let amount = match old_trans.ttype
 		{
 			TransType::Deposit(a) => a,
-
-			_ =>
-			{
-				errors.push( TransErr::ShouldBeDeposit{ trans } );
-				return;
-			}
+			_                     => return Err( TransErr::ShouldBeDeposit{ trans } ),
 		};
 
 
@@ -283,8 +260,7 @@ impl Bank
 		//
 		if old_trans.state != TransState::Success
 		{
-			errors.push( TransErr::WrongTransState{ trans } );
-			return;
+			return Err( TransErr::WrongTransState{ trans } );
 		}
 
 
@@ -293,16 +269,17 @@ impl Bank
 		//
 		if client.available() < amount
 		{
-			errors.push( TransErr::InsufficientFunds{ trans } );
-			return;
+			return Err( TransErr::InsufficientFunds{ trans } );
 		}
 
+		let a = client.available().try_sub( amount ).map_err( |e| (trans, e) )?;
+		let h = client.held     ().try_add( amount ).map_err( |e| (trans, e) )?;
 
-		match client.update_balance( client.available() - amount, client.held() + amount )
-		{
-			Ok (_) => old_trans.state = TransState::Disputed ,
-			Err(e) => errors.push( (trans, e).into() )       ,
-		}
+		client.set_available( a ).map_err( |e| (trans, e) )?;
+		client.set_held     ( h ).map_err( |e| (trans, e) )?;
+
+		old_trans.state = TransState::Disputed;
+		Ok(())
 	}
 
 
@@ -333,19 +310,14 @@ impl Bank
 	/// - client should equal client of disputed transaction.
 	/// - client.held >= disputed amount
 	//
-	fn resolution( db: &mut HashMap<u32, Transact>, errors: &mut Vec<TransErr>, client: &mut Client, trans: Transact, action: Resolution )
+	fn resolution( db: &mut HashMap<u32, Transact>, client: &mut Client, trans: Transact, action: Resolution ) -> Result<(), TransErr>
 	{
 		// transaction should exist
 		//
 		let old_trans = match db.get_mut( &trans.id )
 		{
 			Some(t) => t,
-
-			None =>
-			{
-				errors.push( TransErr::ReferNoneExisting{ trans } );
-				return;
-			}
+			None    => return Err( TransErr::ReferNoneExisting{ trans } ),
 		};
 
 
@@ -353,8 +325,7 @@ impl Bank
 		//
 		if client.id() != old_trans.client
 		{
-			errors.push( TransErr::WrongClient{ trans } );
-			return;
+			return Err( TransErr::WrongClient{ trans } );
 		}
 
 
@@ -363,12 +334,7 @@ impl Bank
 		let amount = match old_trans.ttype
 		{
 			TransType::Deposit(a) => a,
-
-			_ =>
-			{
-				errors.push( TransErr::ShouldBeDeposit{ trans } );
-				return;
-			}
+			_                     => return Err( TransErr::ShouldBeDeposit{ trans } ),
 		};
 
 
@@ -376,8 +342,7 @@ impl Bank
 		//
 		if old_trans.state != TransState::Disputed
 		{
-			errors.push( TransErr::WrongTransState{ trans } );
-			return;
+			return Err( TransErr::WrongTransState{ trans } );
 		}
 
 
@@ -391,8 +356,7 @@ impl Bank
 		if client.held() < amount
 		{
 			debug_assert!( client.held() >= amount );
-			errors.push( TransErr::InsufficientFunds{ trans } );
-			return;
+			return Err( TransErr::InsufficientFunds{ trans } );
 		}
 
 
@@ -400,27 +364,27 @@ impl Bank
 		{
 			Resolution::Resolve =>
 			{
-				match client.update_balance( client.available() + amount, client.held() - amount )
-				{
-					Ok (_) => old_trans.state = TransState::Success ,
-					Err(e) => errors.push( (trans, e).into() )      ,
-				}
+				let a = client.available().try_add( amount ).map_err( |e| (trans, e) )?;
+				let h = client.held     ().try_sub( amount ).map_err( |e| (trans, e) )?;
+
+				client.set_available( a ).map_err( |e| (trans, e) )?;
+				client.set_held     ( h ).map_err( |e| (trans, e) )?;
+
+				old_trans.state = TransState::Success;
 			}
 
 			Resolution::ChargeBack =>
 			{
-				match client.update_balance( client.available(), client.held() - amount )
-				{
-					Ok (_) =>
-					{
-						old_trans.state = TransState::ChargedBack;
-						client.lock();
-					}
+				let h = client.held().try_sub( amount ).map_err( |e| (trans, e) )?;
 
-					Err(e) => errors.push( (trans, e).into() ),
-				}
+				client.set_held( h ).map_err( |e| (trans, e) )?;
+
+				old_trans.state = TransState::ChargedBack;
+				client.lock();
 			}
 		}
+
+		Ok(())
 	}
 }
 
@@ -440,7 +404,7 @@ mod test
 	{
 		let mut bank = Bank::new();
 
-		let trs: Vec<Result<_, TransErr>> = vec![ Ok( Transact::new( Deposit(3.2), 1, 1 ) ) ];
+		let trs: Vec<Result<_, TransErr>> = vec![ Ok( Transact::new( Deposit( Balance::try_from(3.2).unwrap() ), 1, 1 ) ) ];
 
 		bank.run( trs.into_iter() );
 		bank.clients.get_mut(&1).unwrap().lock();
@@ -456,8 +420,8 @@ mod test
 
 		let trs: Vec<Result<_, TransErr>> = vec!
 		[
-			Ok( Transact::new( Deposit(3.2), 1, 1 ) ),
-			Ok( Transact::new( Deposit(2.3), 1, 2 ) ),
+			Ok( Transact::new( Deposit( Balance::try_from(3.2).unwrap() ), 1, 1 ) ),
+			Ok( Transact::new( Deposit( Balance::try_from(2.3).unwrap() ), 1, 2 ) ),
 		];
 
 		let errs   = bank.run( trs.into_iter() );
@@ -466,7 +430,7 @@ mod test
 		let client = bank.clients.get(&1).unwrap();
 			assert_eq!( client.available(), 5.5 );
 			assert_eq!( client.held()     , 0.0 );
-			assert_eq!( client.total()  , 5.5 );
+			assert_eq!( client.total()    , 5.5 );
 	}
 
 
@@ -477,7 +441,7 @@ mod test
 
 		let trs: Vec<Result<_, TransErr>> = vec!
 		[
-			Ok( Transact::new( Deposit(3.2), 1, 1 ) ),
+			Ok( Transact::new( Deposit( Balance::try_from(3.2).unwrap() ), 1, 1 ) ),
 		];
 
 		let errs = bank.run( trs.into_iter() );
@@ -492,8 +456,8 @@ mod test
 
 		let trs: Vec<Result<_, TransErr>> = vec!
 		[
-			Ok( Transact::new( Deposit (3.0), 1, 1 ) ),
-			Ok( Transact::new( WithDraw(2.0), 1, 2 ) ),
+			Ok( Transact::new( Deposit ( Balance::try_from(3.0).unwrap() ), 1, 1 ) ),
+			Ok( Transact::new( WithDraw( Balance::try_from(2.0).unwrap() ), 1, 2 ) ),
 		];
 
 		let errs   = bank.run( trs.into_iter() );
@@ -502,7 +466,7 @@ mod test
 		let client = bank.clients.get(&1).unwrap();
 			assert_eq!( client.available(), 1.0 );
 			assert_eq!( client.held()     , 0.0 );
-			assert_eq!( client.total()  , 1.0 );
+			assert_eq!( client.total()    , 1.0 );
 	}
 
 
@@ -512,7 +476,7 @@ mod test
 
 		let trs: Vec<Result<_, TransErr>> = vec!
 		[
-			Ok( Transact::new( WithDraw(2.0), 1, 2 ) ),
+			Ok( Transact::new( WithDraw( Balance::try_from(2.0).unwrap() ), 1, 2 ) ),
 		];
 
 		let errs = bank.run( trs.into_iter() );
@@ -527,7 +491,7 @@ mod test
 
 		let trs: Vec<Result<_, TransErr>> = vec!
 		[
-			Ok( Transact::new( WithDraw(2.0), 1, 2 ) ),
+			Ok( Transact::new( WithDraw( Balance::try_from(2.0).unwrap() ), 1, 2 ) ),
 		];
 
 		let errs = bank.run( trs.into_iter() );
@@ -542,8 +506,8 @@ mod test
 
 		let trs: Vec<Result<_, TransErr>> = vec!
 		[
-			Ok( Transact::new( Deposit (3.0), 1, 1 ) ),
-			Ok( Transact::new( WithDraw(4.0), 1, 2 ) ),
+			Ok( Transact::new( Deposit ( Balance::try_from(3.0).unwrap() ), 1, 1 ) ),
+			Ok( Transact::new( WithDraw( Balance::try_from(4.0).unwrap() ), 1, 2 ) ),
 		];
 
 		let errs = bank.run( trs.into_iter() );
