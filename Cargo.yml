@@ -66,11 +66,11 @@ dependencies:
   # Means we use types from these crates in our public API.
   #
   serde: { version: ^1, features: [ derive ] }
+  csv  : ^1
 
   # Private dependencies
   #
-  csv      : ^1
-  once_cell: ^1
+
 
 dev-dependencies:
 

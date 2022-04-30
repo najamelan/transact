@@ -1,5 +1,5 @@
 use crate::{ import::*, transaction::*, TransErr };
-use once_cell::unsync::Lazy;
+
 
 
 /// A csv source for transactions. The format is as follows:
@@ -46,7 +46,6 @@ impl<T: std::io::Read> Iterator for CsvParse<T>
 
 	fn next( &mut self ) -> Option<Self::Item>
 	{
-		let header = Lazy::new( || csv::StringRecord::from( vec![ "type", "client", "tx", "amount" ] ) );
 
 		if let Some(result) = self.source.next()
 		{
@@ -56,7 +55,7 @@ impl<T: std::io::Read> Iterator for CsvParse<T>
 				Err(e) => return Some(Err(TransErr::DeserializeTransact{ source: Some(e) } )),
 			};
 
-			match cr.deserialize::<CsvRecord<'_>>( Some(&header) )
+				match cr.deserialize::<CsvRecord<'_>>( None )
 			{
 				Ok (r) => return Some( Transact::try_from(r) ),
 				Err(e) => return Some(Err(TransErr::DeserializeTransact{ source: Some(e) } )),
