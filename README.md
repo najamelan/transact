@@ -52,7 +52,9 @@ This is a bit of an annoying type. It is not `Clone`, nor `UnwindSafe`. This is 
 
 ### Input
 
-The application assumes that headers are present in the csv file. 
+The application assumes that headers are present in the csv file. This has some implications. First of all, the first line of the input file is always ignored. If it did not actually contain headers, the first record just get's lost. There is currently no detection or verification that the first row is actually headers. Secondly, invalid utf8 in the first line is ignored and the file will be processed.
+
+Invalid utf8 in other rows will just ignore that transaction (and report an error) but process the rest of the file.
 
 ### Ambiguities
 

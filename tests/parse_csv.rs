@@ -11,6 +11,8 @@
 //! - Invalid input:
 //!
 //!   ✓ file with one invalid line.
+//!   ✓ invalid utf in header is ignored
+//!   ✓ invalid utf in value causes just this transaction to be ignored
 //!   - dispute, resolve, charge back with amount.
 //!   - deposit/withdraw without amount.
 //!   - non numeric values.
@@ -163,6 +165,68 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 		assert_eq!( client.available(), 1.5 );
 		assert_eq!( client.held()     , 0.0 );
 		assert_eq!( client.total()    , 1.5 );
+
+
+	Ok(())
+}
+
+
+// invalid utf in header is ignored
+//
+#[test] fn invalid_utf8_in_header() -> DynResult
+{
+	let parser   = CsvParse::try_from( Path::new("tests/data/invalid_utf8_in_header.csv") )?;
+	let mut bank = Bank::new();
+
+
+	let err = bank.run( parser );
+
+		assert_eq!( err.len(), 0, "{err:?}" );
+
+
+	let client = bank.clients().get(&1).unwrap();
+
+		assert_eq!( client.available(), 1.5 );
+		assert_eq!( client.held()     , 0.0 );
+		assert_eq!( client.total()    , 1.5 );
+
+
+	let client = bank.clients().get(&2).unwrap();
+
+		assert_eq!( client.available(), 1.9 );
+		assert_eq!( client.held()     , 0.0 );
+		assert_eq!( client.total()    , 1.9 );
+
+
+	Ok(())
+}
+
+
+// invalid utf in value causes just this transaction to be ignored
+//
+#[test] fn invalid_utf8_in_value() -> DynResult
+{
+	let parser   = CsvParse::try_from( Path::new("tests/data/invalid_utf8_in_value.csv") )?;
+	let mut bank = Bank::new();
+
+
+	let err = bank.run( parser );
+
+		assert_eq!( err.len(), 1, "{err:?}" );
+
+
+	let client = bank.clients().get(&1).unwrap();
+
+		assert_eq!( client.available(), 0.5 );
+		assert_eq!( client.held()     , 0.0 );
+		assert_eq!( client.total()    , 0.5 );
+
+
+	let client = bank.clients().get(&2).unwrap();
+
+		assert_eq!( client.available(), 1.9 );
+		assert_eq!( client.held()     , 0.0 );
+		assert_eq!( client.total()    , 1.9 );
 
 
 	Ok(())

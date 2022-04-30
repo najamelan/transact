@@ -78,7 +78,7 @@ impl Transact
 /// The format actually in the CSV file.
 /// Used for deserializing with Serde.
 //
-#[ derive( Copy, Clone, Debug, Serialize, Deserialize) ]
+#[ derive( Copy, Clone, Debug, Deserialize) ]
 //
 pub(crate) struct CsvRecord<'a>
 {

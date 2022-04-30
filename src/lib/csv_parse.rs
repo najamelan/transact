@@ -17,7 +17,7 @@ use once_cell::unsync::Lazy;
 //
 pub struct CsvParse<T>
 {
-	source: csv::ByteRecordsIntoIter<T>,
+	source: csv::StringRecordsIntoIter<T>,
 }
 
 
@@ -32,7 +32,7 @@ impl<T: std::io::Read > CsvParse<T>
 
 			.trim( csv::Trim::All )
 			.from_reader( reader )
-			.into_byte_records()
+			.into_records()
 		;
 
 		Self{ source }
@@ -46,7 +46,7 @@ impl<T: std::io::Read> Iterator for CsvParse<T>
 
 	fn next( &mut self ) -> Option<Self::Item>
 	{
-		let header = Lazy::new( || csv::ByteRecord::from( vec![ "type", "client", "tx", "amount" ] ) );
+		let header = Lazy::new( || csv::StringRecord::from( vec![ "type", "client", "tx", "amount" ] ) );
 
 		if let Some(result) = self.source.next()
 		{

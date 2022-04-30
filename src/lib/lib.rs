@@ -46,6 +46,6 @@ mod import
 	pub(crate) use
 	{
 		std   :: { path::{ Path, PathBuf }, fs::File, fmt, collections::HashMap, fmt::Write } ,
-		serde :: { Serialize, Deserialize                                                   } ,
+		serde :: { Deserialize                                                              } ,
 	};
 }
