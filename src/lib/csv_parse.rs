@@ -21,21 +21,31 @@ pub struct CsvParse<T>
 }
 
 
-
 impl<T: std::io::Read > CsvParse<T>
 {
 	/// Create a new file based source for Csv data.
 	//
-	pub fn new( reader: T ) -> Self
+	pub fn new( reader: T ) -> Result<Self, TransErr>
 	{
-		let source = csv::ReaderBuilder::new()
+		let mut reader = csv::ReaderBuilder::new()
 
 			.trim( csv::Trim::All )
 			.from_reader( reader )
-			.into_records()
 		;
 
-		Self{ source }
+		let headers = reader.headers()
+
+			.map_err( |e| TransErr::DeserializeHeader{ source: e } )?
+		;
+
+		if headers != [ "type", "client", "tx", "amount" ].as_ref()
+		{
+			return Err( TransErr::NoHeader );
+		}
+
+		let source = reader.into_records();
+
+		Ok( Self{ source } )
 	}
 }
 
@@ -79,9 +89,11 @@ impl<T> fmt::Debug for CsvParse<T>
 
 
 
-impl From< &'static str > for CsvParse< &[u8] >
+impl TryFrom< &'static str > for CsvParse< &[u8] >
 {
-	fn from( s: &'static str  ) -> CsvParse< &[u8] >
+	type Error = TransErr;
+
+	fn try_from( s: &'static str  ) -> Result< CsvParse<&[u8]>, TransErr >
 	{
 		CsvParse::new( s.trim().as_bytes() )
 	}
@@ -108,6 +120,6 @@ impl TryFrom< &Path > for CsvParse<File>
 			})?
 		;
 
-		Ok( CsvParse::new( file ) )
+		CsvParse::new( file )
 	}
 }

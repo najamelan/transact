@@ -19,7 +19,7 @@ use
 
 type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
-#[test] fn two_clients()
+#[test] fn two_clients() -> DynResult
 {
 	let input = "
 
@@ -32,7 +32,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = Bank::new();
 
 
@@ -54,10 +54,11 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 		assert_eq!( client.held()     , 0.0 );
 		assert_eq!( client.total()    , 0.5 );
 
+	Ok(())
 }
 
 
-#[test] fn dispute()
+#[test] fn dispute() -> DynResult
 {
 	let input = "
 
@@ -68,7 +69,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = Bank::new();
 
 
@@ -82,10 +83,12 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 		assert_eq!( client.available(), 0.66   );
 		assert_eq!( client.held()     , 0.3333 );
 		assert_eq!( client.total()    , 0.9933 );
+
+	Ok(())
 }
 
 
-#[test] fn resolve()
+#[test] fn resolve() -> DynResult
 {
 	let input = "
 
@@ -97,7 +100,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = Bank::new();
 
 
@@ -111,10 +114,12 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 		assert_eq!( client.available(), 0.9933 );
 		assert_eq!( client.held()     , 0.0    );
 		assert_eq!( client.total()    , 0.9933 );
+
+	Ok(())
 }
 
 
-#[test] fn chargeback()
+#[test] fn chargeback() -> DynResult
 {
 	let input = "
 
@@ -126,7 +131,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = Bank::new();
 
 
@@ -140,6 +145,8 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 		assert_eq!( client.available(), 0.66 );
 		assert_eq!( client.held()     , 0.0  );
 		assert_eq!( client.total()    , 0.66 );
+
+	Ok(())
 }
 
 

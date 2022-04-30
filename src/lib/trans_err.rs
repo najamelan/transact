@@ -24,6 +24,17 @@ pub enum TransErr
 		source: Option<csv::Error>,
 	},
 
+	/// The header could not be deserialized. Most likely it's not valid utf8.
+	//
+	DeserializeHeader
+	{
+		source: csv::Error,
+	},
+
+	/// The Csv file did not contain a valid header.
+	//
+	NoHeader,
+
 	/// Failed to export CSV.
 	//
 	SerializeClients
@@ -127,6 +138,7 @@ impl std::error::Error for TransErr
 		{
 			TransErr::InputFile          { source, .. } => Some(source),
 			TransErr::SerializeClients   { source     } => Some(source),
+			TransErr::DeserializeHeader  { source     } => Some(source),
 			TransErr::DeserializeTransact{ source     } =>
 			{
 				match source
@@ -147,6 +159,7 @@ impl std::error::Error for TransErr
 			TransErr::FloatIsInfinite    {..} => None,
 			TransErr::FloatIsNaN         {..} => None,
 			TransErr::FloatIsNegative    {..} => None,
+			TransErr::NoHeader                => None,
 		}
 	}
 }
@@ -167,6 +180,10 @@ impl std::fmt::Display for TransErr
 			TransErr::SerializeClients{ source } =>
 
 				writeln!( f, "\nError: Failed to serialize client information: {source}" ),
+
+			TransErr::DeserializeHeader{ source } =>
+
+				writeln!( f, "\nError: The header could not be deserialized. Underlying error: {source}" ),
 
 			TransErr::DeserializeTransact{source} =>
 			{
@@ -225,6 +242,10 @@ impl std::fmt::Display for TransErr
 			TransErr::FloatIsNegative{trans} =>
 
 				writeln!( f, "\nError: A transaction caused a balance to be set to a negative value: {trans:?}. {no_effect}" ),
+
+			TransErr::NoHeader =>
+
+				writeln!( f, "\nError: Only CSV files with a valid header are supported. For a valid header the first line should be: \"type, client, tx, amount\"" ),
 		}
 	}
 }

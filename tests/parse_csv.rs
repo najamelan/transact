@@ -11,8 +11,9 @@
 //! - Invalid input:
 //!
 //!   ✓ file with one invalid line.
-//!   ✓ invalid utf in header is ignored
+//!   ✓ invalid utf in header reports error
 //!   ✓ invalid utf in value causes just this transaction to be ignored
+//!   ✓ file with missing header reports error
 //!   - dispute, resolve, charge back with amount.
 //!   - deposit/withdraw without amount.
 //!   - non numeric values.
@@ -171,34 +172,26 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 }
 
 
-// invalid utf in header is ignored
+// Files without header are not accepted.
 //
-#[test] fn invalid_utf8_in_header() -> DynResult
+#[test] fn no_headers()
 {
-	let parser   = CsvParse::try_from( Path::new("tests/data/invalid_utf8_in_header.csv") )?;
-	let mut bank = Bank::new();
+	let parser = CsvParse::try_from( Path::new("tests/data/no_headers.csv") );
+
+	assert!( matches!( parser, Err(TransErr::NoHeader) ) );
+}
 
 
-	let err = bank.run( parser );
+// invalid utf in header is reported
+//
+#[test] fn invalid_utf8_in_header()
+{
+	let parser = CsvParse::try_from( Path::new("tests/data/invalid_utf8_in_header.csv") );
 
-		assert_eq!( err.len(), 0, "{err:?}" );
-
-
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), 1.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.5 );
-
-
-	let client = bank.clients().get(&2).unwrap();
-
-		assert_eq!( client.available(), 1.9 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.9 );
-
-
-	Ok(())
+	assert!( matches!(
+		parser,
+		Err( TransErr::DeserializeHeader{ source } ) if matches!( source.kind(), &csv::ErrorKind::Utf8{..} )
+	));
 }
 
 

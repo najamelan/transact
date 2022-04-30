@@ -29,7 +29,7 @@ use
 	pretty_assertions::assert_eq ,
 };
 
-// type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
+type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 fn locked_client() -> Bank
 {
@@ -61,7 +61,7 @@ fn locked_client() -> Bank
 
 // try deposit on a locked account
 //
-#[test] fn locked_deposit()
+#[test] fn locked_deposit() -> DynResult
 {
 	let input = "
 
@@ -70,7 +70,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = locked_client();
 
 
@@ -95,12 +95,14 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 2.0 );
 		assert_eq!( client.held()     , 3.2 );
 		assert_eq!( client.total()    , 5.2 );
+
+	Ok(())
 }
 
 
 // try withdrawal on a locked account
 //
-#[test] fn locked_withdraw()
+#[test] fn locked_withdraw() -> DynResult
 {
 	let input = "
 
@@ -109,7 +111,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = locked_client();
 
 
@@ -134,12 +136,14 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 2.0 );
 		assert_eq!( client.held()     , 3.2 );
 		assert_eq!( client.total()    , 5.2 );
+
+	Ok(())
 }
 
 
 // try dispute on a locked account
 //
-#[test] fn locked_dispute()
+#[test] fn locked_dispute() -> DynResult
 {
 	let input = "
 
@@ -148,7 +152,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = locked_client();
 
 
@@ -172,12 +176,14 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 2.0 );
 		assert_eq!( client.held()     , 3.2 );
 		assert_eq!( client.total()    , 5.2 );
+
+	Ok(())
 }
 
 
 // try resolve on a locked account
 //
-#[test] fn locked_resolve()
+#[test] fn locked_resolve() -> DynResult
 {
 	let input = "
 
@@ -186,7 +192,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = locked_client();
 
 
@@ -210,12 +216,14 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 2.0 );
 		assert_eq!( client.held()     , 3.2 );
 		assert_eq!( client.total()    , 5.2 );
+
+	Ok(())
 }
 
 
 // try charge back on a locked account
 //
-#[test] fn locked_charge_back()
+#[test] fn locked_charge_back() -> DynResult
 {
 	let input = "
 
@@ -224,7 +232,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = locked_client();
 
 
@@ -248,6 +256,8 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 2.0 );
 		assert_eq!( client.held()     , 3.2 );
 		assert_eq!( client.total()    , 5.2 );
+
+	Ok(())
 }
 
 
@@ -259,7 +269,7 @@ fn locked_client() -> Bank
 
 // with same id, try deposit deposit
 //
-#[test] fn dup_deposit_deposit()
+#[test] fn dup_deposit_deposit() -> DynResult
 {
 	let input = "
 
@@ -269,7 +279,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = Bank::new();
 
 
@@ -294,13 +304,15 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 1.0 );
 		assert_eq!( client.held()     , 0.0 );
 		assert_eq!( client.total()    , 1.0 );
+
+	Ok(())
 }
 
 
 
 // with same id, try deposit withdraw deposit
 //
-#[test] fn dup_deposit_withdraw_deposit()
+#[test] fn dup_deposit_withdraw_deposit() -> DynResult
 {
 	let input = "
 
@@ -311,7 +323,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = Bank::new();
 
 
@@ -336,13 +348,15 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 0.5 );
 		assert_eq!( client.held()     , 0.0 );
 		assert_eq!( client.total()    , 0.5 );
+
+	Ok(())
 }
 
 
 
 // with same id, try deposit withdraw
 //
-#[test] fn dup_deposit_withdraw()
+#[test] fn dup_deposit_withdraw() -> DynResult
 {
 	let input = "
 
@@ -352,7 +366,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = Bank::new();
 
 
@@ -377,6 +391,8 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 1.0 );
 		assert_eq!( client.held()     , 0.0 );
 		assert_eq!( client.total()    , 1.0 );
+
+	Ok(())
 }
 
 
@@ -388,7 +404,7 @@ fn locked_client() -> Bank
 
 // try to withdraw more than available
 //
-#[test] fn withdraw_too_much()
+#[test] fn withdraw_too_much() -> DynResult
 {
 	let input = "
 
@@ -398,7 +414,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = Bank::new();
 
 
@@ -423,12 +439,14 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 1.0 );
 		assert_eq!( client.held()     , 0.0 );
 		assert_eq!( client.total()    , 1.0 );
+
+	Ok(())
 }
 
 
 // try to dispute funds no longer available
 //
-#[test] fn dispute_after_withdraw()
+#[test] fn dispute_after_withdraw() -> DynResult
 {
 	let input = "
 
@@ -439,7 +457,7 @@ fn locked_client() -> Bank
 
 	";
 
-	let parser   = CsvParse::from( input );
+	let parser   = CsvParse::try_from( input )?;
 	let mut bank = Bank::new();
 
 
@@ -465,5 +483,7 @@ fn locked_client() -> Bank
 		assert_eq!( client.available(), 0.5 );
 		assert_eq!( client.held()     , 0.0 );
 		assert_eq!( client.total()    , 0.5 );
+
+	Ok(())
 }
 
