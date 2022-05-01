@@ -158,8 +158,8 @@ use
 
 	let err = bank.process( parser );
 
-		assert_eq!( err.len(), 2, "{err:?}"                               );
-		assert!   ( matches!( err[0], TransErr::DeserializeTransact{..} ) );
+		assert_eq!( err.len(), 2, "{err:?}"                          );
+		assert!   ( matches!( err[0], TransErr::DeserializeCsv{..} ) );
 
 
 	let client = bank.clients().get(&1).unwrap();

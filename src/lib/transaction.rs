@@ -15,6 +15,22 @@ pub enum TransType
 }
 
 
+impl fmt::Display for TransType
+{
+	fn fmt( &self, f: &mut std::fmt::Formatter<'_> ) -> fmt::Result
+	{
+		match self
+		{
+			Self::Deposit (a) => write!( f, "Deposit({})" , a.normalized() ),
+			Self::WithDraw(a) => write!( f, "WithDraw({})", a.normalized() ),
+			Self::Dispute     => write!( f, "Dispute"                      ),
+			Self::Resolve     => write!( f, "Resolve"                      ),
+			Self::ChargeBack  => write!( f, "ChargeBack"                   ),
+		}
+	}
+}
+
+
 /// The transaction state.
 //
 #[ derive( Copy, Clone, PartialEq, PartialOrd, Debug) ]
@@ -75,17 +91,59 @@ impl Transact
 }
 
 
+impl fmt::Display for Transact
+{
+	fn fmt( &self, f: &mut std::fmt::Formatter<'_> ) -> fmt::Result
+	{
+		write!
+		(
+			f, "Transaction: type: {}, client: {}, tx: {}",
+			self.ttype, self.client, self.id
+		)
+	}
+}
+
+
+
 /// The format actually in the CSV file.
 /// Used for deserializing with Serde.
 //
-#[ derive( Clone, Debug, Deserialize) ]
+#[ derive( Debug, Deserialize) ]
 //
-pub(crate) struct CsvRecord<'a>
+pub struct CsvRecord<'a>
 {
-	r#type: &'a str            ,
+	r#type: Cow<'a, str>       ,
 	client: u16                ,
 	tx    : u32                ,
 	amount: Option<BigDecimal> ,
+}
+
+
+impl CsvRecord<'_>
+{
+	fn to_owned( &self ) -> CsvRecord<'static>
+	{
+		CsvRecord
+		{
+			r#type: Cow::Owned( self.r#type.clone().into_owned() ),
+			client: self.client,
+			tx    : self.tx,
+			amount: self.amount.clone(),
+		}
+	}
+}
+
+
+impl fmt::Display for CsvRecord<'_>
+{
+	fn fmt( &self, f: &mut std::fmt::Formatter<'_> ) -> fmt::Result
+	{
+		write!
+		(
+			f, "CsvRecord: type: {}, client: {}, tx: {}, amount: {:?}",
+			self.r#type, self.client, self.tx, self.amount.as_ref().map( BigDecimal::normalized )
+		)
+	}
 }
 
 
@@ -96,20 +154,28 @@ impl<'a> TryFrom< CsvRecord<'a> > for Transact
 
 	fn try_from( r: CsvRecord<'a> ) -> Result<Transact, Self::Error>
 	{
-		match (r.r#type, r.amount)
+		let CsvRecord { r#type, client, tx, amount } = r;
+
+		match (r#type.as_ref(), amount)
 		{
 			( x, Some(a) ) =>
 			{
 				if a.is_negative()
 				{
-					return Err( TransErr::DeserializeTransact{ source: None } );
+					let record = CsvRecord{ r#type, client, tx, amount: Some(a) }.to_owned();
+					return Err( TransErr::DeserializeTransact{ kind: DeserTransactKind::AmountNegative, record } );
 				}
 
 				let ttype = match x
 				{
 					"deposit"    => TransType::Deposit (a),
 					"withdrawal" => TransType::WithDraw(a),
-					_            => return Err( TransErr::DeserializeTransact{ source: None } ),
+
+					_ =>
+					{
+						let record = CsvRecord{ r#type, client, tx, amount: Some(a) }.to_owned();
+						return Err( TransErr::DeserializeTransact{ kind: DeserTransactKind::AmountNegative, record } );
+					}
 				};
 
 				Ok( Transact::new( ttype, r.client, r.tx ) )
@@ -119,7 +185,11 @@ impl<'a> TryFrom< CsvRecord<'a> > for Transact
 			( "resolve"   , None ) => Ok( Transact::new( TransType::Resolve   , r.client, r.tx ) ),
 			( "chargeback", None ) => Ok( Transact::new( TransType::ChargeBack, r.client, r.tx ) ),
 
-			_ => Err( TransErr::DeserializeTransact{ source: None } )
+			( _, None ) =>
+			{
+				let record = CsvRecord{ r#type, client, tx, amount: None }.to_owned();
+				Err( TransErr::DeserializeTransact{ kind: DeserTransactKind::AmountNegative, record } )
+			}
 		}
 	}
 }

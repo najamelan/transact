@@ -22,6 +22,10 @@
 //!
 //!   ✓ try to withdraw more than available
 //!   ✓ try to dispute funds no longer available
+//!
+//! - DeserializeTransact:
+//!
+//!   ✓ Create a transaction with a negative amount
 //
 mod common;
 
@@ -489,4 +493,35 @@ fn locked_client() -> Bank
 
 	Ok(())
 }
+
+
+// Create a transaction with a negative amount
+//
+#[test] fn negative_amount() -> DynResult
+{
+	let input = "
+
+		      type, client, tx, amount
+		   deposit,      1,  1,   -1.0
+
+	";
+
+	let parser   = CsvParse::try_from( input )?;
+	let mut bank = Bank::new();
+
+
+	let err = bank.process( parser );
+
+		assert_eq!( err.len(), 1 );
+
+
+	assert!( matches!( &err[0],
+
+		TransErr::DeserializeTransact{ kind, .. } if kind == &DeserTransactKind::AmountNegative
+
+	));
+
+	Ok(())
+}
+
 

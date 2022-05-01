@@ -2,6 +2,25 @@
 
 use crate::{ import::*, * };
 
+
+/// Different things that can go wrong in deserialization after csv has correctly
+/// deserialized. This means the types were correct, but values are not compatible
+/// with a
+//
+#[ derive( Debug, Clone, Copy, PartialEq, Eq ) ]
+//
+pub enum DeserTransactKind
+{
+	/// The csv file holds a negative amount for deposit or withdrawal.
+	//
+	AmountNegative,
+
+	/// The transaction type is unknown. Only "deposit", "withdrawal", "dispute", "resolve" and chargeback
+	/// are supported.
+	//
+	UnknownTransType,
+}
+
 /// The error type for errors happening in libtransact.
 //
 #[ allow(variant_size_differences) ]
@@ -17,11 +36,19 @@ pub enum TransErr
 		path  : PathBuf,
 	},
 
+	/// The input contained a transaction line that is invalid. These are errors from the csv crate.
+	//
+	DeserializeCsv
+	{
+		source: csv::Error,
+	},
+
 	/// The input contained a transaction line that is invalid.
 	//
 	DeserializeTransact
 	{
-		source: Option<csv::Error>,
+		kind  : DeserTransactKind,
+		record: CsvRecord<'static>,
 	},
 
 	/// The header could not be deserialized. Most likely it's not valid utf8.
@@ -118,15 +145,9 @@ impl std::error::Error for TransErr
 			TransErr::InputFile          { source, .. } => Some(source),
 			TransErr::SerializeClients   { source     } => Some(source),
 			TransErr::DeserializeHeader  { source     } => Some(source),
-			TransErr::DeserializeTransact{ source     } =>
-			{
-				match source
-				{
-					Some(s) => Some(s),
-					None    => None,
-				}
-			}
+			TransErr::DeserializeCsv     { source     } => Some(source),
 
+			TransErr::DeserializeTransact{..} => None,
 			TransErr::DuplicateTransact  {..} => None,
 			TransErr::AccountLocked      {..} => None,
 			TransErr::InsufficientFunds  {..} => None,
@@ -161,51 +182,45 @@ impl std::fmt::Display for TransErr
 
 				writeln!( f, "\nError: The header could not be deserialized. Underlying error: {source}" ),
 
-			TransErr::DeserializeTransact{source} =>
-			{
-				write!( f, "\nError: A line of input could not be deserialized into a valid transaction." )?;
+			TransErr::DeserializeCsv{source} =>
 
-				if let Some(s) = source
-				{
-					write!( f, "Underlying error: {s}" )?;
-				}
+				write!( f, "\nError: A line of input could not be deserialized into a valid transaction: {source}. {no_effect}" ),
 
-				writeln!( f, "{no_effect}" )?;
+			TransErr::DeserializeTransact{ kind, record } =>
 
-				Ok(())
-			}
+				writeln!( f, "\nError: Could not use deserialized data to construct a valid transaction: {kind:?}, {record}. {no_effect}" ),
 
 			TransErr::DuplicateTransact{trans} =>
 
-				writeln!( f, "\nError: A duplicate transaction id occurred in your data: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: A duplicate transaction id occurred in your data: {trans}. {no_effect}" ),
 
 			TransErr::AccountLocked{trans} =>
 
-				writeln!( f, "\nError: The client account is locked: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: The client account is locked: {trans}. {no_effect}" ),
 
 			TransErr::InsufficientFunds{trans} =>
 
-				writeln!( f, "\nError: Cannot withdraw/dispute with insufficient funds: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Cannot withdraw/dispute with insufficient funds: {trans}. {no_effect}" ),
 
 			TransErr::NoClient{trans} =>
 
-				writeln!( f, "\nError: Cannot withdraw/dispute/resolve/charge back from non-existing client: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Cannot withdraw/dispute/resolve/charge back from non-existing client: {trans}. {no_effect}" ),
 
 			TransErr::WrongClient{trans} =>
 
-				writeln!( f, "\nError: Cannot dispute/resolve/charge back from a different client than the original deposit: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Cannot dispute/resolve/charge back from a different client than the original deposit: {trans}. {no_effect}" ),
 
 			TransErr::WrongTransState{trans} =>
 
-				writeln!( f, "\nError: Can only dispute a successful transaction, resolve/charge back a disputed transaction: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Can only dispute a successful transaction, resolve/charge back a disputed transaction: {trans}. {no_effect}" ),
 
 			TransErr::ReferNoneExisting{trans} =>
 
-				writeln!( f, "\nError: Cannot dispute/resolve/charge back a non existing transaction: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Cannot dispute/resolve/charge back a non existing transaction: {trans}. {no_effect}" ),
 
 			TransErr::ShouldBeDeposit{trans} =>
 
-				writeln!( f, "\nError: Disputed transaction must be a deposit: {trans:?}. {no_effect}" ),
+				writeln!( f, "\nError: Disputed transaction must be a deposit: {trans}. {no_effect}" ),
 
 			TransErr::NoHeader =>
 
