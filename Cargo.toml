@@ -13,6 +13,10 @@ path = "src/main.rs"
 [dependencies]
 csv = "^1"
 
+[dependencies.bigdecimal]
+features = ["serde"]
+version = "^0.3"
+
 [dependencies.serde]
 features = ["derive"]
 version = "^1"

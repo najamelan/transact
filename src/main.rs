@@ -36,7 +36,7 @@ fn main()
 
 	let mut bank = Bank::new();
 
-	let errors = bank.run( transactions );
+	let errors = bank.process( transactions );
 
 	// report errors on stderr.
 	//

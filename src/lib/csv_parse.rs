@@ -65,7 +65,7 @@ impl<T: std::io::Read> Iterator for CsvParse<T>
 				Err(e) => return Some(Err(TransErr::DeserializeTransact{ source: Some(e) } )),
 			};
 
-				match cr.deserialize::<CsvRecord<'_>>( None )
+			match cr.deserialize::<CsvRecord<'_>>( None )
 			{
 				Ok (r) => return Some( Transact::try_from(r) ),
 				Err(e) => return Some(Err(TransErr::DeserializeTransact{ source: Some(e) } )),

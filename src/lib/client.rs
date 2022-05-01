@@ -1,21 +1,18 @@
-use crate::{ * };
-
-
-
+use crate::{ import::* };
 
 
 /// Represents a client account.
 /// There are 2 types of balance: available and held.
 /// Held corresponds to funds from disputed transactions.
 //
-#[ derive( Copy, Clone, PartialEq, Debug ) ]
+#[ derive( Clone, PartialEq, Debug ) ]
 //
 pub struct Client
 {
-	available: Balance ,
-	held     : Balance ,
-	id       : u16     ,
-	locked   : bool    ,
+	pub(crate) available: BigDecimal ,
+	pub(crate) held     : BigDecimal ,
+	pub(crate) id       : u16        ,
+	pub(crate) locked   : bool       ,
 }
 
 
@@ -27,10 +24,10 @@ impl Client
 	{
 		Self
 		{
-			available: Balance::try_from( 0.0 ).unwrap() ,
-			held     : Balance::try_from( 0.0 ).unwrap() ,
-			locked   : false                             ,
-			id                                           ,
+			available: BigDecimal::default() ,
+			held     : BigDecimal::default() ,
+			locked   : false                 ,
+			id                               ,
 		}
 	}
 
@@ -43,48 +40,20 @@ impl Client
 	}
 
 
-	/// Update the available balance.
-	///
-	/// This can fail if the total of held and available balances cannot be represented
-	/// with a float.
-	//
-	pub fn set_available( &mut self, new: Balance ) -> Result<&mut Self, FloatErr>
-	{
-		self.held.try_add( new )?;
-
-		self.available = new;
-		Ok(self)
-	}
-
-
-	/// Update the held balance
-	///
-	/// This can fail if the total of held and available balances cannot be represented
-	/// with a float.
-	//
-	pub fn set_held( &mut self, new: Balance ) -> Result<&mut Self, FloatErr>
-	{
-		self.held.try_add( new )?;
-
-		self.held = new;
-		Ok(self)
-	}
-
-
 	/// The available funds for the client. These are the funds they dispose of
 	/// for withdrawal.
 	//
-	pub fn available( &self ) -> Balance
+	pub fn available( &self ) -> BigDecimal
 	{
-		self.available
+		self.available.clone()
 	}
 
 
 	/// Disputed funds are funds for a deposit the client wishes to undo.
 	//
-	pub fn held( &self ) -> Balance
+	pub fn held( &self ) -> BigDecimal
 	{
-		self.held
+		self.held.clone()
 	}
 
 
@@ -92,9 +61,9 @@ impl Client
 	/// This is infallible because the setters for available and held guarantee the sum
 	/// can be represented in an f64.
 	//
-	pub fn total( &self ) -> Balance
+	pub fn total( &self ) -> BigDecimal
 	{
-		self.available.try_add( self.held ).unwrap()
+		&self.available + &self.held
 	}
 
 

@@ -3,15 +3,15 @@ use crate::{ import::*, * };
 /// The type of transaction.
 //
 #[ allow(missing_docs) ]
-#[ derive( Copy, Clone, PartialEq, PartialOrd, Debug) ]
+#[ derive( Clone, PartialEq, PartialOrd, Debug) ]
 //
 pub enum TransType
 {
-	Deposit (Balance) ,
-	WithDraw(Balance) ,
-	Dispute           ,
-	Resolve           ,
-	ChargeBack        ,
+	Deposit (BigDecimal) ,
+	WithDraw(BigDecimal) ,
+	Dispute              ,
+	Resolve              ,
+	ChargeBack           ,
 }
 
 
@@ -47,7 +47,7 @@ pub enum TransState
 /// Internal representation of a transaction.
 //
 #[ allow(missing_docs) ]
-#[ derive( Copy, Clone, PartialEq, Debug) ]
+#[ derive( Clone, PartialEq, Debug) ]
 //
 pub struct Transact
 {
@@ -78,14 +78,14 @@ impl Transact
 /// The format actually in the CSV file.
 /// Used for deserializing with Serde.
 //
-#[ derive( Copy, Clone, Debug, Deserialize) ]
+#[ derive( Clone, Debug, Deserialize) ]
 //
 pub(crate) struct CsvRecord<'a>
 {
-	r#type: &'a str     ,
-	client: u16         ,
-	tx    : u32         ,
-	amount: Option<f64> ,
+	r#type: &'a str            ,
+	client: u16                ,
+	tx    : u32                ,
+	amount: Option<BigDecimal> ,
 }
 
 
@@ -100,14 +100,15 @@ impl<'a> TryFrom< CsvRecord<'a> > for Transact
 		{
 			( x, Some(a) ) =>
 			{
-				// TODO: let the source be an enum over FloatErr and CsvError, so we can include the float error here.
-				//
-				let b = Balance::try_from(a).map_err( |_| TransErr::DeserializeTransact{ source: None } )?;
+				if a.is_negative()
+				{
+					return Err( TransErr::DeserializeTransact{ source: None } );
+				}
 
 				let ttype = match x
 				{
-					"deposit"    => TransType::Deposit (b),
-					"withdrawal" => TransType::WithDraw(b),
+					"deposit"    => TransType::Deposit (a),
+					"withdrawal" => TransType::WithDraw(a),
 					_            => return Err( TransErr::DeserializeTransact{ source: None } ),
 				};
 

@@ -15,7 +15,7 @@ impl CsvExport
 	pub fn export( clients: &HashMap< u16, Client > ) -> Result<String, TransErr>
 	{
 		let mut width = 12;
-		let mut out = String::new();
+		let mut out   = String::new();
 
 		std::writeln!( out, "{:>width$}{:>width$}{:>width$}{:>width$}{:>width$}", "client,", "available,", "held,", "total,", "locked" )
 
@@ -26,7 +26,10 @@ impl CsvExport
 
 		for (i, c) in clients
 		{
-			std::writeln!( out, "{:>width$},{:>width$},{:>width$},{:>width$},{:>width$}", i, c.available(), c.held(), c.total(), c.is_locked() )
+			std::writeln!( out, "{:>width$},{:>width$},{:>width$},{:>width$},{:>width$}",
+
+				i, c.available().normalized(), c.held().normalized(), c.total().normalized(), c.is_locked()
+			)
 
 				.map_err( |source| TransErr::SerializeClients{ source } )?
 			;

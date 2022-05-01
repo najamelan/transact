@@ -105,27 +105,6 @@ pub enum TransErr
 	{
 		trans: Transact,
 	},
-
-	/// A transaction causes a balance to overflow.
-	//
-	FloatIsInfinite
-	{
-		trans: Transact,
-	},
-
-	/// A transaction causes NaN to be stored in a balance.
-	//
-	FloatIsNaN
-	{
-		trans: Transact,
-	},
-
-	/// A transaction causes NaN to be stored in a balance.
-	//
-	FloatIsNegative
-	{
-		trans: Transact,
-	},
 }
 
 
@@ -156,9 +135,6 @@ impl std::error::Error for TransErr
 			TransErr::WrongTransState    {..} => None,
 			TransErr::ReferNoneExisting  {..} => None,
 			TransErr::ShouldBeDeposit    {..} => None,
-			TransErr::FloatIsInfinite    {..} => None,
-			TransErr::FloatIsNaN         {..} => None,
-			TransErr::FloatIsNegative    {..} => None,
 			TransErr::NoHeader                => None,
 		}
 	}
@@ -231,18 +207,6 @@ impl std::fmt::Display for TransErr
 
 				writeln!( f, "\nError: Disputed transaction must be a deposit: {trans:?}. {no_effect}" ),
 
-			TransErr::FloatIsInfinite{trans} =>
-
-				writeln!( f, "\nError: A transaction caused a balance to be set to an infinite value: {trans:?}. {no_effect}" ),
-
-			TransErr::FloatIsNaN{trans} =>
-
-				writeln!( f, "\nError: A transaction caused a balance to be set to a Nan value: {trans:?}. {no_effect}" ),
-
-			TransErr::FloatIsNegative{trans} =>
-
-				writeln!( f, "\nError: A transaction caused a balance to be set to a negative value: {trans:?}. {no_effect}" ),
-
 			TransErr::NoHeader =>
 
 				writeln!( f, "\nError: Only CSV files with a valid header are supported. For a valid header the first line should be: \"type, client, tx, amount\"" ),
@@ -250,16 +214,3 @@ impl std::fmt::Display for TransErr
 	}
 }
 
-
-impl From<(Transact, FloatErr)> for TransErr
-{
-	fn from( (trans, err): (Transact, FloatErr) ) -> Self
-	{
-		match err
-		{
-			FloatErr::Infinite => TransErr::FloatIsInfinite{ trans } ,
-			FloatErr::NaN      => TransErr::FloatIsNaN     { trans } ,
-			FloatErr::Negative => TransErr::FloatIsNegative{ trans } ,
-		}
-	}
-}

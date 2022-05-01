@@ -22,7 +22,6 @@
 	variant_size_differences      ,
 )]
 
-mod balance;
 mod bank;
 mod client;
 mod csv_export;
@@ -30,7 +29,6 @@ mod trans_err;
 mod csv_parse;
 mod transaction;
 
-pub use balance     ::*;
 pub use bank        ::*;
 pub use client      ::*;
 pub use csv_export  ::*;
@@ -45,7 +43,8 @@ mod import
 {
 	pub(crate) use
 	{
-		std   :: { path::{ Path, PathBuf }, fs::File, fmt, collections::HashMap, fmt::Write } ,
-		serde :: { Deserialize                                                              } ,
+		std        :: { path::{ Path, PathBuf }, fs::File, fmt, collections::HashMap, fmt::Write } ,
+		serde      :: { Deserialize                                                              } ,
+		bigdecimal :: { BigDecimal, Signed                                                       } ,
 	};
 }

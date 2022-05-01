@@ -9,15 +9,24 @@
 //! ✓ chargeback dispute
 //! ✓ take input from file
 //! ✓ run binary
+//! ✓ Test a large number of operation to see when rounding errors appear.
 //
+mod common;
+
 use
 {
-	libtransact::*               ,
-	pretty_assertions::assert_eq ,
-	std::process::Command        ,
+	common           :: *          ,
+	libtransact      :: *          ,
+	pretty_assertions:: assert_eq  ,
+
+	std::
+	{
+		process :: Command ,
+		fmt     :: Write   ,
+		io      :: Cursor  ,
+	}
 };
 
-type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 #[test] fn two_clients() -> DynResult
 {
@@ -36,23 +45,23 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 0 );
 
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 1.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.5 );
+		assert_eq!( client.available(), dec("1.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.5") );
 
 
 	let client = bank.clients().get(&2).unwrap();
 
-		assert_eq!( client.available(), 0.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 0.5 );
+		assert_eq!( client.available(), dec("0.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("0.5") );
 
 	Ok(())
 }
@@ -73,16 +82,16 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 0 );
 
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 0.66   );
-		assert_eq!( client.held()     , 0.3333 );
-		assert_eq!( client.total()    , 0.9933 );
+		assert_eq!( client.available(), dec("0.66")   );
+		assert_eq!( client.held()     , dec("0.3333") );
+		assert_eq!( client.total()    , dec("0.9933") );
 
 	Ok(())
 }
@@ -104,16 +113,16 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 0, "{err:?}" );
 
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 0.9933 );
-		assert_eq!( client.held()     , 0.0    );
-		assert_eq!( client.total()    , 0.9933 );
+		assert_eq!( client.available(), dec("0.9933") );
+		assert_eq!( client.held()     , dec("0.0")    );
+		assert_eq!( client.total()    , dec("0.9933") );
 
 	Ok(())
 }
@@ -135,19 +144,94 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 0, "{err:?}" );
 
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 0.66 );
-		assert_eq!( client.held()     , 0.0  );
-		assert_eq!( client.total()    , 0.66 );
+		assert_eq!( client.available(), dec("0.66") );
+		assert_eq!( client.held()     , dec("0.0")  );
+		assert_eq!( client.total()    , dec("0.66") );
 
 	Ok(())
 }
+
+
+// Test a large number of operation to see when rounding errors appear.
+//
+#[test] fn precision() -> DynResult
+{
+	let mut input = "type, client, tx, amount\n".to_string();
+
+
+	for i in 1..20_000
+	{
+		writeln!( input, "deposit, 1, {i}, 11111111.1111" )?;
+	}
+
+	for i in 20_001..40_000
+	{
+		writeln!( input, "withdrawal, 1, {i}, 11111111.1111" )?;
+	}
+
+
+	let parser   = CsvParse::new( Cursor::new(input) )?;
+	let mut bank = Bank::new();
+
+
+	let err = bank.process( parser );
+
+		assert_eq!( err.len(), 0, "{err:?}" );
+
+
+	let client = bank.clients().get(&1).unwrap();
+
+		assert_eq!( client.available(), dec("0.0") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("0.0") );
+
+	Ok(())
+}
+
+
+// Test a large number of operation to see when rounding errors appear.
+//
+#[test] fn precision_9999() -> DynResult
+{
+	let mut input = "type, client, tx, amount\n".to_string();
+
+
+	for i in 1..20_000
+	{
+		writeln!( input, "deposit, 1, {i}, 9999999.9999" )?;
+	}
+
+	for i in 20_001..40_000
+	{
+		writeln!( input, "withdrawal, 1, {i}, 9999999.9999" )?;
+	}
+
+
+	let parser   = CsvParse::new( Cursor::new(input) )?;
+	let mut bank = Bank::new();
+
+
+	let err = bank.process( parser );
+
+		assert_eq!( err.len(), 0, "{err:?}" );
+
+
+	let client = bank.clients().get(&1).unwrap();
+
+		assert_eq!( client.available(), dec("0.0") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("0.0") );
+
+	Ok(())
+}
+
 
 
 #[test] fn cli() -> DynResult

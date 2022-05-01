@@ -18,14 +18,15 @@
 //!   - deposit/withdraw without amount.
 //!   - non numeric values.
 //
+mod common;
+
 use
 {
-	libtransact::*               ,
-	pretty_assertions::assert_eq ,
-	std::path::Path              ,
+	common            :: *          ,
+	libtransact       :: *          ,
+	pretty_assertions :: assert_eq  ,
+	std               :: path::Path ,
 };
-
-type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 
 
@@ -35,23 +36,23 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 0, "{err:?}" );
 
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 1.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.5 );
+		assert_eq!( client.available(), dec("1.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.5") );
 
 
 	let client = bank.clients().get(&2).unwrap();
 
-		assert_eq!( client.available(), 1.9 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.9 );
+		assert_eq!( client.available(), dec("1.9") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.9") );
 
 
 	Ok(())
@@ -65,23 +66,23 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 0, "{err:?}" );
 
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 1.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.5 );
+		assert_eq!( client.available(), dec("1.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.5") );
 
 
 	let client = bank.clients().get(&2).unwrap();
 
-		assert_eq!( client.available(), 1.9 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.9 );
+		assert_eq!( client.available(), dec("1.9") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.9") );
 
 
 	Ok(())
@@ -95,23 +96,23 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 0, "{err:?}" );
 
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 1.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.5 );
+		assert_eq!( client.available(), dec("1.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.5") );
 
 
 	let client = bank.clients().get(&2).unwrap();
 
-		assert_eq!( client.available(), 1.9 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.9 );
+		assert_eq!( client.available(), dec("1.9") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.9") );
 
 
 	Ok(())
@@ -125,23 +126,23 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 0, "{err:?}" );
 
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 1.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.5 );
+		assert_eq!( client.available(), dec("1.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.5") );
 
 
 	let client = bank.clients().get(&2).unwrap();
 
-		assert_eq!( client.available(), 1.9 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.9 );
+		assert_eq!( client.available(), dec("1.9") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.9") );
 
 
 	Ok(())
@@ -155,7 +156,7 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 2, "{err:?}"                               );
 		assert!   ( matches!( err[0], TransErr::DeserializeTransact{..} ) );
@@ -163,9 +164,9 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 1.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.5 );
+		assert_eq!( client.available(), dec("1.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.5") );
 
 
 	Ok(())
@@ -203,23 +204,23 @@ type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1, "{err:?}" );
 
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 0.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 0.5 );
+		assert_eq!( client.available(), dec("0.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("0.5") );
 
 
 	let client = bank.clients().get(&2).unwrap();
 
-		assert_eq!( client.available(), 1.9 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.9 );
+		assert_eq!( client.available(), dec("1.9") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.9") );
 
 
 	Ok(())

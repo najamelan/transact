@@ -23,13 +23,16 @@
 //!   ✓ try to withdraw more than available
 //!   ✓ try to dispute funds no longer available
 //
+mod common;
+
 use
 {
-	libtransact::*               ,
-	pretty_assertions::assert_eq ,
+	common            :: *         ,
+ 	libtransact       :: *         ,
+	pretty_assertions :: assert_eq ,
 };
 
-type DynResult<T = ()> = Result<T, Box< dyn std::error::Error + Send + Sync> >;
+
 
 fn locked_client() -> Bank
 {
@@ -37,13 +40,13 @@ fn locked_client() -> Bank
 
 	let trs: Vec<Result<_, TransErr>> = vec!
 	[
-		Ok( Transact::new( TransType::Deposit( Balance::try_from(3.2).unwrap() ), 1, 1 ) ) ,
-		Ok( Transact::new( TransType::Deposit( Balance::try_from(2.0).unwrap() ), 1, 2 ) ) ,
-		Ok( Transact::new( TransType::Dispute     , 1, 1 ) ) ,
+		Ok( Transact::new( TransType::Deposit( dec("3.2") ), 1, 1 ) ) ,
+		Ok( Transact::new( TransType::Deposit( dec("2.0") ), 1, 2 ) ) ,
+		Ok( Transact::new( TransType::Dispute              , 1, 1 ) ) ,
 	];
 
 
-	let errs = bank.run( trs.into_iter() );
+	let errs = bank.process( trs.into_iter() );
 
 		assert!( errs.is_empty() );
 
@@ -74,11 +77,11 @@ fn locked_client() -> Bank
 	let mut bank = locked_client();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
-		assert!( matches!( err[0],
+		assert!( matches!( &err[0],
 
 			TransErr::AccountLocked { trans: Transact
 			{
@@ -87,14 +90,14 @@ fn locked_client() -> Bank
 				client: 1                     ,
 				id    : 3                     ,
 
-			}} if a == 1.0
+			}} if a == &dec("1.0")
 		));
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 2.0 );
-		assert_eq!( client.held()     , 3.2 );
-		assert_eq!( client.total()    , 5.2 );
+		assert_eq!( client.available(), dec("2.0") );
+		assert_eq!( client.held()     , dec("3.2") );
+		assert_eq!( client.total()    , dec("5.2") );
 
 	Ok(())
 }
@@ -115,11 +118,11 @@ fn locked_client() -> Bank
 	let mut bank = locked_client();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
-		assert!( matches!( err[0],
+		assert!( matches!( &err[0],
 
 			TransErr::AccountLocked { trans: Transact
 			{
@@ -128,14 +131,14 @@ fn locked_client() -> Bank
 				client: 1                      ,
 				id    : 3                      ,
 
-			}} if a == 1.0
+			}} if a == &dec("1.0")
 		));
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 2.0 );
-		assert_eq!( client.held()     , 3.2 );
-		assert_eq!( client.total()    , 5.2 );
+		assert_eq!( client.available(), dec("2.0") );
+		assert_eq!( client.held()     , dec("3.2") );
+		assert_eq!( client.total()    , dec("5.2") );
 
 	Ok(())
 }
@@ -156,7 +159,7 @@ fn locked_client() -> Bank
 	let mut bank = locked_client();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
@@ -173,9 +176,9 @@ fn locked_client() -> Bank
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 2.0 );
-		assert_eq!( client.held()     , 3.2 );
-		assert_eq!( client.total()    , 5.2 );
+		assert_eq!( client.available(), dec("2.0") );
+		assert_eq!( client.held()     , dec("3.2") );
+		assert_eq!( client.total()    , dec("5.2") );
 
 	Ok(())
 }
@@ -196,7 +199,7 @@ fn locked_client() -> Bank
 	let mut bank = locked_client();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
@@ -213,9 +216,9 @@ fn locked_client() -> Bank
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 2.0 );
-		assert_eq!( client.held()     , 3.2 );
-		assert_eq!( client.total()    , 5.2 );
+		assert_eq!( client.available(), dec("2.0") );
+		assert_eq!( client.held()     , dec("3.2") );
+		assert_eq!( client.total()    , dec("5.2") );
 
 	Ok(())
 }
@@ -236,7 +239,7 @@ fn locked_client() -> Bank
 	let mut bank = locked_client();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
@@ -253,9 +256,9 @@ fn locked_client() -> Bank
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 2.0 );
-		assert_eq!( client.held()     , 3.2 );
-		assert_eq!( client.total()    , 5.2 );
+		assert_eq!( client.available(), dec("2.0") );
+		assert_eq!( client.held()     , dec("3.2") );
+		assert_eq!( client.total()    , dec("5.2") );
 
 	Ok(())
 }
@@ -283,11 +286,11 @@ fn locked_client() -> Bank
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
-		assert!( matches!( err[0],
+		assert!( matches!( &err[0],
 
 			TransErr::DuplicateTransact { trans: Transact
 			{
@@ -296,14 +299,14 @@ fn locked_client() -> Bank
 				client: 1                     ,
 				id    : 1                     ,
 
-			}} if a == 1.5
+			}} if a == &dec("1.5")
 		));
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 1.0 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.0 );
+		assert_eq!( client.available(), dec("1.0") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.0") );
 
 	Ok(())
 }
@@ -327,11 +330,11 @@ fn locked_client() -> Bank
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
-		assert!( matches!( err[0],
+		assert!( matches!( &err[0],
 
 			TransErr::DuplicateTransact { trans: Transact
 			{
@@ -340,14 +343,14 @@ fn locked_client() -> Bank
 				client: 1                     ,
 				id    : 2                     ,
 
-			}} if a == 2.0
+			}} if a == &dec("2.0")
 		));
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 0.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 0.5 );
+		assert_eq!( client.available(), dec("0.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("0.5") );
 
 	Ok(())
 }
@@ -370,11 +373,11 @@ fn locked_client() -> Bank
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
-		assert!( matches!( err[0],
+		assert!( matches!( &err[0],
 
 			TransErr::DuplicateTransact { trans: Transact
 			{
@@ -383,14 +386,14 @@ fn locked_client() -> Bank
 				client: 1                      ,
 				id    : 1                      ,
 
-			}} if a == 0.5
+			}} if a == &dec("0.5")
 		));
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 1.0 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.0 );
+		assert_eq!( client.available(), dec("1.0") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.0") );
 
 	Ok(())
 }
@@ -418,11 +421,11 @@ fn locked_client() -> Bank
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
-		assert!( matches!( err[0],
+		assert!( matches!( &err[0],
 
 			TransErr::InsufficientFunds { trans: Transact
 			{
@@ -431,14 +434,14 @@ fn locked_client() -> Bank
 				client: 1                      ,
 				id    : 2                      ,
 
-			}} if a == 1.5
+			}} if a == &dec("1.5")
 		));
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 1.0 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 1.0 );
+		assert_eq!( client.available(), dec("1.0") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("1.0") );
 
 	Ok(())
 }
@@ -461,7 +464,7 @@ fn locked_client() -> Bank
 	let mut bank = Bank::new();
 
 
-	let err = bank.run( parser );
+	let err = bank.process( parser );
 
 		assert_eq!( err.len(), 1 );
 
@@ -480,9 +483,9 @@ fn locked_client() -> Bank
 
 	let client = bank.clients().get(&1).unwrap();
 
-		assert_eq!( client.available(), 0.5 );
-		assert_eq!( client.held()     , 0.0 );
-		assert_eq!( client.total()    , 0.5 );
+		assert_eq!( client.available(), dec("0.5") );
+		assert_eq!( client.held()     , dec("0.0") );
+		assert_eq!( client.total()    , dec("0.5") );
 
 	Ok(())
 }

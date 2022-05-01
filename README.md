@@ -30,15 +30,7 @@ Also, documentation is minimal. There are no examples, nor inline, nor in the `/
 
 ### Floating point arithmetic
 
-The application currently uses f64 floats to represent account balance. Floats have a risk of both rounding errors and overflow. I cannot detect any problems as long as numbers are limited to a maximum of 12 places before and 4 places after the decimal point. The specification did not mention anything about the maximum expected account balance.
-
-If more precision is required, a third party solution is probably necessary. Possibly the _decimal_ crate. It uses the C library [decNumber](http://speleotrove.com/decimal/decnumber.html) under the hood and would require reviewing.
-
-#### References
-
-- [What Every Programmer Should Know About Floating-Point Arithmetic](https://floating-point-gui.de/)
-- [What Every Computer Scientist Should Know About Floating-Point Arithmetic](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)
-- [IEEE Standard for Floating-Point Arithmetic](https://irem.univ-reunion.fr/IMG/pdf/ieee-754-2008.pdf)
+Floating point arithmetic can cause rounding and overflow errors which are undesirable in a financial application. Since no upper bound on account balances is specified, I just used the _bigdecimal_ crate which has arbitrary precision with up to 2^63 decimal places. If this is overkill and more performance is desired, potentially the _rust_decimal_ crate can be considered as it uses just one `u128` for storage.
 
 
 ### Review the csv crate
@@ -62,6 +54,12 @@ Invalid utf8 in other rows will just ignore that transaction (and report an erro
   For now I reject the dispute, but several alternatives are possible:
   - put the available account at a negative balance
   - allow disputing up to the sum available, even if that is less than the amount of the transaction that is disputed.
+  
+
+### Performance
+
+No optimization has been done. The crate tries not to waste performance for no reason, no benchmarks where run.
+The _bigdecimal_ crate might not be the most performant way of representing account balances for example.
 
 ## Contributing
 
