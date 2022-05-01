@@ -13,24 +13,16 @@
 //
 mod common;
 
-use
-{
-	common           :: *          ,
-	libtransact      :: *          ,
-	pretty_assertions:: assert_eq  ,
-
-	std::
-	{
-		process :: Command ,
-		fmt     :: Write   ,
-		io      :: Cursor  ,
-	}
+use {
+    common::*,
+    libtransact::*,
+    pretty_assertions::assert_eq,
+    std::{fmt::Write, io::Cursor, process::Command},
 };
 
-
-#[test] fn two_clients() -> DynResult
-{
-	let input = "
+#[test]
+fn two_clients() -> DynResult {
+    let input = "
 
 		      type, client, tx, amount
 		   deposit,      1,  1,    1.0
@@ -41,35 +33,31 @@ use
 
 	";
 
-	let parser   = CsvParse::try_from( input )?;
-	let mut bank = Bank::new();
+    let parser = CsvParse::try_from(input)?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-	let err = bank.process( parser );
+    assert_eq!(err.len(), 0);
 
-		assert_eq!( err.len(), 0 );
+    let client = bank.clients().get(&1).unwrap();
 
+    assert_eq!(client.available(), dec("1.5"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.5"));
 
-	let client = bank.clients().get(&1).unwrap();
+    let client = bank.clients().get(&2).unwrap();
 
-		assert_eq!( client.available(), dec("1.5") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.5") );
+    assert_eq!(client.available(), dec("0.5"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("0.5"));
 
-
-	let client = bank.clients().get(&2).unwrap();
-
-		assert_eq!( client.available(), dec("0.5") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("0.5") );
-
-	Ok(())
+    Ok(())
 }
 
-
-#[test] fn dispute() -> DynResult
-{
-	let input = "
+#[test]
+fn dispute() -> DynResult {
+    let input = "
 
 		      type, client, tx, amount
 		   deposit,      1,  1, 0.66
@@ -78,28 +66,25 @@ use
 
 	";
 
-	let parser   = CsvParse::try_from( input )?;
-	let mut bank = Bank::new();
+    let parser = CsvParse::try_from(input)?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-	let err = bank.process( parser );
+    assert_eq!(err.len(), 0);
 
-		assert_eq!( err.len(), 0 );
+    let client = bank.clients().get(&1).unwrap();
 
+    assert_eq!(client.available(), dec("0.66"));
+    assert_eq!(client.held(), dec("0.3333"));
+    assert_eq!(client.total(), dec("0.9933"));
 
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("0.66")   );
-		assert_eq!( client.held()     , dec("0.3333") );
-		assert_eq!( client.total()    , dec("0.9933") );
-
-	Ok(())
+    Ok(())
 }
 
-
-#[test] fn resolve() -> DynResult
-{
-	let input = "
+#[test]
+fn resolve() -> DynResult {
+    let input = "
 
 		      type, client, tx, amount
 		   deposit,      1,  1, 0.66
@@ -109,28 +94,25 @@ use
 
 	";
 
-	let parser   = CsvParse::try_from( input )?;
-	let mut bank = Bank::new();
+    let parser = CsvParse::try_from(input)?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-	let err = bank.process( parser );
+    assert_eq!(err.len(), 0, "{err:?}");
 
-		assert_eq!( err.len(), 0, "{err:?}" );
+    let client = bank.clients().get(&1).unwrap();
 
+    assert_eq!(client.available(), dec("0.9933"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("0.9933"));
 
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("0.9933") );
-		assert_eq!( client.held()     , dec("0.0")    );
-		assert_eq!( client.total()    , dec("0.9933") );
-
-	Ok(())
+    Ok(())
 }
 
-
-#[test] fn chargeback() -> DynResult
-{
-	let input = "
+#[test]
+fn chargeback() -> DynResult {
+    let input = "
 
 		      type, client, tx, amount
 		   deposit,      1,  1, 0.66
@@ -140,117 +122,97 @@ use
 
 	";
 
-	let parser   = CsvParse::try_from( input )?;
-	let mut bank = Bank::new();
+    let parser = CsvParse::try_from(input)?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-	let err = bank.process( parser );
+    assert_eq!(err.len(), 0, "{err:?}");
 
-		assert_eq!( err.len(), 0, "{err:?}" );
+    let client = bank.clients().get(&1).unwrap();
 
+    assert_eq!(client.available(), dec("0.66"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("0.66"));
 
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("0.66") );
-		assert_eq!( client.held()     , dec("0.0")  );
-		assert_eq!( client.total()    , dec("0.66") );
-
-	Ok(())
+    Ok(())
 }
-
 
 // Test a large number of operation to see when rounding errors appear.
 //
-#[test] fn precision() -> DynResult
-{
-	let mut input = "type, client, tx, amount\n".to_string();
+#[test]
+fn precision() -> DynResult {
+    let mut input = "type, client, tx, amount\n".to_string();
 
+    for i in 1..20_000 {
+        writeln!(input, "deposit, 1, {i}, 11111111.1111")?;
+    }
 
-	for i in 1..20_000
-	{
-		writeln!( input, "deposit, 1, {i}, 11111111.1111" )?;
-	}
+    for i in 20_001..40_000 {
+        writeln!(input, "withdrawal, 1, {i}, 11111111.1111")?;
+    }
 
-	for i in 20_001..40_000
-	{
-		writeln!( input, "withdrawal, 1, {i}, 11111111.1111" )?;
-	}
+    let parser = CsvParse::new(Cursor::new(input))?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-	let parser   = CsvParse::new( Cursor::new(input) )?;
-	let mut bank = Bank::new();
+    assert_eq!(err.len(), 0, "{err:?}");
 
+    let client = bank.clients().get(&1).unwrap();
 
-	let err = bank.process( parser );
+    assert_eq!(client.available(), dec("0.0"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("0.0"));
 
-		assert_eq!( err.len(), 0, "{err:?}" );
-
-
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("0.0") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("0.0") );
-
-	Ok(())
+    Ok(())
 }
-
 
 // Test a large number of operation to see when rounding errors appear.
 //
-#[test] fn precision_9999() -> DynResult
-{
-	let mut input = "type, client, tx, amount\n".to_string();
+#[test]
+fn precision_9999() -> DynResult {
+    let mut input = "type, client, tx, amount\n".to_string();
 
+    for i in 1..20_000 {
+        writeln!(input, "deposit, 1, {i}, 9999999.9999")?;
+    }
 
-	for i in 1..20_000
-	{
-		writeln!( input, "deposit, 1, {i}, 9999999.9999" )?;
-	}
+    for i in 20_001..40_000 {
+        writeln!(input, "withdrawal, 1, {i}, 9999999.9999")?;
+    }
 
-	for i in 20_001..40_000
-	{
-		writeln!( input, "withdrawal, 1, {i}, 9999999.9999" )?;
-	}
+    let parser = CsvParse::new(Cursor::new(input))?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-	let parser   = CsvParse::new( Cursor::new(input) )?;
-	let mut bank = Bank::new();
+    assert_eq!(err.len(), 0, "{err:?}");
 
+    let client = bank.clients().get(&1).unwrap();
 
-	let err = bank.process( parser );
+    assert_eq!(client.available(), dec("0.0"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("0.0"));
 
-		assert_eq!( err.len(), 0, "{err:?}" );
-
-
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("0.0") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("0.0") );
-
-	Ok(())
+    Ok(())
 }
 
+#[test]
+fn cli() -> DynResult {
+    let output = Command::new("cargo")
+        .arg("run")
+        .arg("--")
+        .arg("tests/data/simple.csv")
+        .output()?;
 
+    // Since order of the clients is not deterministic, we cannot test an exact outcome.
+    //
+    let out = std::str::from_utf8(&output.stdout)?;
 
-#[test] fn cli() -> DynResult
-{
-	let output = Command::new("cargo")
+    assert!(out.contains("client,  available,       held,      total,      locked"));
+    assert!(out.contains("1,        1.5,          0,        1.5,      false"));
+    assert!(out.contains("2,        1.9,          0,        1.9,      false"));
 
-		.arg( "run" )
-		.arg( "--"  )
-		.arg( "tests/data/simple.csv"  )
-		.output()?
-	;
-
-	// Since order of the clients is not deterministic, we cannot test an exact outcome.
-	//
-	let out = std::str::from_utf8(&output.stdout)?;
-
-	assert!( out.contains( "client,  available,       held,      total,      locked" ) );
-	assert!( out.contains(      "1,        1.5,          0,        1.5,      false"  ) );
-	assert!( out.contains(      "2,        1.9,          0,        1.9,      false"  ) );
-
-	Ok(())
+    Ok(())
 }

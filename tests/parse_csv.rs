@@ -20,208 +20,166 @@
 //
 mod common;
 
-use
-{
-	common            :: *          ,
-	libtransact       :: *          ,
-	pretty_assertions :: assert_eq  ,
-	std               :: path::Path ,
-};
+use {common::*, libtransact::*, pretty_assertions::assert_eq, std::path::Path};
 
+#[test]
+fn file_input() -> DynResult {
+    let parser = CsvParse::try_from(Path::new("tests/data/simple.csv"))?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-#[test] fn file_input() -> DynResult
-{
-	let parser   = CsvParse::try_from( Path::new("tests/data/simple.csv") )?;
-	let mut bank = Bank::new();
+    assert_eq!(err.len(), 0, "{err:?}");
 
+    let client = bank.clients().get(&1).unwrap();
 
-	let err = bank.process( parser );
+    assert_eq!(client.available(), dec("1.5"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.5"));
 
-		assert_eq!( err.len(), 0, "{err:?}" );
+    let client = bank.clients().get(&2).unwrap();
 
+    assert_eq!(client.available(), dec("1.9"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.9"));
 
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("1.5") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.5") );
-
-
-	let client = bank.clients().get(&2).unwrap();
-
-		assert_eq!( client.available(), dec("1.9") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.9") );
-
-
-	Ok(())
+    Ok(())
 }
 
+#[test]
+fn empty_leading() -> DynResult {
+    let parser = CsvParse::try_from(Path::new("tests/data/empty_leading.csv"))?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-#[test] fn empty_leading() -> DynResult
-{
-	let parser   = CsvParse::try_from( Path::new("tests/data/empty_leading.csv") )?;
-	let mut bank = Bank::new();
+    assert_eq!(err.len(), 0, "{err:?}");
 
+    let client = bank.clients().get(&1).unwrap();
 
-	let err = bank.process( parser );
+    assert_eq!(client.available(), dec("1.5"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.5"));
 
-		assert_eq!( err.len(), 0, "{err:?}" );
+    let client = bank.clients().get(&2).unwrap();
 
+    assert_eq!(client.available(), dec("1.9"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.9"));
 
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("1.5") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.5") );
-
-
-	let client = bank.clients().get(&2).unwrap();
-
-		assert_eq!( client.available(), dec("1.9") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.9") );
-
-
-	Ok(())
+    Ok(())
 }
 
+#[test]
+fn empty_trailing() -> DynResult {
+    let parser = CsvParse::try_from(Path::new("tests/data/empty_trailing.csv"))?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-#[test] fn empty_trailing() -> DynResult
-{
-	let parser   = CsvParse::try_from( Path::new("tests/data/empty_trailing.csv") )?;
-	let mut bank = Bank::new();
+    assert_eq!(err.len(), 0, "{err:?}");
 
+    let client = bank.clients().get(&1).unwrap();
 
-	let err = bank.process( parser );
+    assert_eq!(client.available(), dec("1.5"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.5"));
 
-		assert_eq!( err.len(), 0, "{err:?}" );
+    let client = bank.clients().get(&2).unwrap();
 
+    assert_eq!(client.available(), dec("1.9"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.9"));
 
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("1.5") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.5") );
-
-
-	let client = bank.clients().get(&2).unwrap();
-
-		assert_eq!( client.available(), dec("1.9") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.9") );
-
-
-	Ok(())
+    Ok(())
 }
 
+#[test]
+fn empty_middle() -> DynResult {
+    let parser = CsvParse::try_from(Path::new("tests/data/empty_middle.csv"))?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-#[test] fn empty_middle() -> DynResult
-{
-	let parser   = CsvParse::try_from( Path::new("tests/data/empty_middle.csv") )?;
-	let mut bank = Bank::new();
+    assert_eq!(err.len(), 0, "{err:?}");
 
+    let client = bank.clients().get(&1).unwrap();
 
-	let err = bank.process( parser );
+    assert_eq!(client.available(), dec("1.5"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.5"));
 
-		assert_eq!( err.len(), 0, "{err:?}" );
+    let client = bank.clients().get(&2).unwrap();
 
+    assert_eq!(client.available(), dec("1.9"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.9"));
 
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("1.5") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.5") );
-
-
-	let client = bank.clients().get(&2).unwrap();
-
-		assert_eq!( client.available(), dec("1.9") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.9") );
-
-
-	Ok(())
+    Ok(())
 }
 
+#[test]
+fn invalid_line() -> DynResult {
+    let parser = CsvParse::try_from(Path::new("tests/data/invalid_line.csv"))?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-#[test] fn invalid_line() -> DynResult
-{
-	let parser   = CsvParse::try_from( Path::new("tests/data/invalid_line.csv") )?;
-	let mut bank = Bank::new();
+    assert_eq!(err.len(), 2, "{err:?}");
+    assert!(matches!(err[0], TransErr::DeserializeCsv { .. }));
 
+    let client = bank.clients().get(&1).unwrap();
 
-	let err = bank.process( parser );
+    assert_eq!(client.available(), dec("1.5"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.5"));
 
-		assert_eq!( err.len(), 2, "{err:?}"                          );
-		assert!   ( matches!( err[0], TransErr::DeserializeCsv{..} ) );
-
-
-	let client = bank.clients().get(&1).unwrap();
-
-		assert_eq!( client.available(), dec("1.5") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.5") );
-
-
-	Ok(())
+    Ok(())
 }
-
 
 // Files without header are not accepted.
 //
-#[test] fn no_headers()
-{
-	let parser = CsvParse::try_from( Path::new("tests/data/no_headers.csv") );
+#[test]
+fn no_headers() {
+    let parser = CsvParse::try_from(Path::new("tests/data/no_headers.csv"));
 
-	assert!( matches!( parser, Err(TransErr::NoHeader) ) );
+    assert!(matches!(parser, Err(TransErr::NoHeader)));
 }
-
 
 // invalid utf in header is reported
 //
-#[test] fn invalid_utf8_in_header()
-{
-	let parser = CsvParse::try_from( Path::new("tests/data/invalid_utf8_in_header.csv") );
+#[test]
+fn invalid_utf8_in_header() {
+    let parser = CsvParse::try_from(Path::new("tests/data/invalid_utf8_in_header.csv"));
 
-	assert!( matches!(
-		parser,
-		Err( TransErr::DeserializeHeader{ source } ) if matches!( source.kind(), &csv::ErrorKind::Utf8{..} )
-	));
+    assert!(matches!(
+        parser,
+        Err( TransErr::DeserializeHeader{ source } ) if matches!( source.kind(), &csv::ErrorKind::Utf8{..} )
+    ));
 }
-
 
 // invalid utf in value causes just this transaction to be ignored
 //
-#[test] fn invalid_utf8_in_value() -> DynResult
-{
-	let parser   = CsvParse::try_from( Path::new("tests/data/invalid_utf8_in_value.csv") )?;
-	let mut bank = Bank::new();
+#[test]
+fn invalid_utf8_in_value() -> DynResult {
+    let parser = CsvParse::try_from(Path::new("tests/data/invalid_utf8_in_value.csv"))?;
+    let mut bank = Bank::new();
 
+    let err = bank.process(parser);
 
-	let err = bank.process( parser );
+    assert_eq!(err.len(), 1, "{err:?}");
 
-		assert_eq!( err.len(), 1, "{err:?}" );
+    let client = bank.clients().get(&1).unwrap();
 
+    assert_eq!(client.available(), dec("0.5"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("0.5"));
 
-	let client = bank.clients().get(&1).unwrap();
+    let client = bank.clients().get(&2).unwrap();
 
-		assert_eq!( client.available(), dec("0.5") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("0.5") );
+    assert_eq!(client.available(), dec("1.9"));
+    assert_eq!(client.held(), dec("0.0"));
+    assert_eq!(client.total(), dec("1.9"));
 
-
-	let client = bank.clients().get(&2).unwrap();
-
-		assert_eq!( client.available(), dec("1.9") );
-		assert_eq!( client.held()     , dec("0.0") );
-		assert_eq!( client.total()    , dec("1.9") );
-
-
-	Ok(())
+    Ok(())
 }
